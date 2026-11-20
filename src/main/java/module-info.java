@@ -11,6 +11,8 @@
  */
 module com.turborel.jdbc {
     requires transitive java.sql;
+    // The parser of an XML value's nodes, whose types the exported API will carry.
+    requires transitive java.xml;
     // Nullness annotations, read as the code compiles and absent at run time (RULES.md D10);
     // transitive, as the exported API's signatures carry them to the programs that read it.
     requires static transitive org.jspecify;

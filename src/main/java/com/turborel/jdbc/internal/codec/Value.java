@@ -313,11 +313,22 @@ public sealed interface Value
     }
 
     /**
-     * An XML value, tag 26: its serialization as CONTENT.
+     * An XML value, tag 26: its serialization as CONTENT ([CLIENT XML values]); a parameter of an
+     * XML type is made of its text.
      *
      * @param serialization the text
      */
     record Xml(String serialization) implements Value {
+        /**
+         * Its nodes, parsed from its serialization.
+         *
+         * @return its nodes, in order, in a fragment of their own
+         * @throws TurborelException SQLSTATE 2200N if its text is not well-formed XML content
+         */
+        public org.w3c.dom.DocumentFragment nodes() throws TurborelException {
+            return XmlNodes.of(serialization);
+        }
+
         @Override
         public void encode(Writer w) throws TurborelException {
             w.u8(Tags.XML).string(serialization);
@@ -326,11 +337,59 @@ public sealed interface Value
 
     /**
      * A UUID, tag 27: its 16 octets, most significant first, as {@code bytes} (turborel's RULES.md
-     * D184; not yet on the page).
+     * D184), read whatever types the program registered ([CLIENT UUIDs]).
      *
      * @param uuid the UUID
      */
     record Uuid(java.util.UUID uuid) implements Value {
+        /**
+         * The UUID of its 16 octets, most significant first.
+         *
+         * @param octets the octets
+         * @return the value
+         * @throws TurborelException SQLCODE -910 if they are not 16
+         */
+        public static Uuid ofOctets(byte[] octets) throws TurborelException {
+            if (octets.length != Uuids.OCTETS) {
+                throw Failures.misuse(Cite.VALUES + " a UUID is 16 octets, not " + octets.length);
+            }
+            return new Uuid(Uuids.of(octets.clone()));
+        }
+
+        /**
+         * The UUID a text writes, as CAST reads it: 32 hexadecimal digits in either case, braced or
+         * not, a hyphen allowed after each group of four digits but the last.
+         *
+         * @param text the text
+         * @return the value, or none if the text writes no UUID
+         */
+        public static @Nullable Uuid parse(String text) {
+            java.util.UUID parsed = Uuids.parse(text);
+            return parsed == null ? null : new Uuid(parsed);
+        }
+
+        /**
+         * Its 16 octets, most significant first.
+         *
+         * @return the octets
+         */
+        public byte[] octets() {
+            return java.nio.ByteBuffer.allocate(Uuids.OCTETS)
+                    .putLong(uuid.getMostSignificantBits())
+                    .putLong(uuid.getLeastSignificantBits())
+                    .array();
+        }
+
+        /**
+         * Its text, as Turborel writes it: lower case, its groups of 8, 4, 4, 4 and 12 digits
+         * hyphenated.
+         *
+         * @return the text
+         */
+        public String text() {
+            return uuid.toString();
+        }
+
         @Override
         public void encode(Writer w) throws TurborelException {
             w.u8(Tags.UUID).bits32(Uuids.OCTETS).u64(Long.reverseBytes(uuid.getMostSignificantBits()));
