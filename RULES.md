@@ -419,7 +419,7 @@ least 90 % of lines, and of branches where the tool measures them. It
 only rises: a change that raises coverage well above it raises it. A
 floor below 100 % says why.
 
-The floor is 95 % of instructions and of branches, kept in
+The floor is 97 % of instructions and of branches, kept in
 `build.gradle.kts`'s `jacocoTestCoverageVerification`. It is below 100 %
 because a few refusals guard what a test cannot make, such as a body
 longer than a Java array holds.
