@@ -276,7 +276,8 @@ class LiveJdbcStatementTest {
     /**
      * Verifies: [DESIGN] D2 a prepared statement of no columns runs as any other, its fetch size
      * set or not; a parameter of place 0 is refused; closing it twice closes it once, and closing
-     * it on a closed connection deallocates nothing.
+     * it on a closed connection deallocates nothing; closing a connection closes its statements and
+     * their result sets.
      */
     @Test
     void preparedStatementsCloseOnce() throws SQLException, IOException {
@@ -292,9 +293,11 @@ class LiveJdbcStatementTest {
                 closeAll(p);
                 assertTrue(p.isClosed());
             }
-            try (PreparedStatement q = c.prepareStatement("VALUES 1")) {
+            try (Statement other = c.createStatement();
+                    PreparedStatement q = c.prepareStatement("VALUES 1")) {
+                ResultSet rs = other.executeQuery("VALUES 1");
                 closeAll(c, q);
-                assertTrue(q.isClosed());
+                assertTrue(q.isClosed() && other.isClosed() && rs.isClosed(), "closed with their connection");
             }
         }
     }
@@ -308,5 +311,44 @@ class LiveJdbcStatementTest {
     private static void closeAll(Connection c, Statement s) throws SQLException {
         c.close();
         s.close();
+    }
+
+    /**
+     * Verifies: [DESIGN] D2 a statement's most field size cuts a character string read to that many
+     * octets; 0 reads it whole.
+     */
+    @Test
+    void theMostFieldSizeCuts() throws SQLException, IOException {
+        try (Connection c = LiveJdbc.connect();
+                Statement s = c.createStatement()) {
+            s.setMaxFieldSize(2);
+            assertEquals(2, s.getMaxFieldSize());
+            try (ResultSet rs = s.executeQuery("VALUES 'abc'")) {
+                assertTrue(rs.next());
+                assertEquals("ab", rs.getString(1));
+            }
+            s.setMaxFieldSize(0);
+            try (ResultSet rs = s.executeQuery("VALUES 'abc'")) {
+                assertTrue(rs.next());
+                assertEquals("abc", rs.getString(1));
+            }
+        }
+    }
+
+    /**
+     * Verifies: [DESIGN] D9 a failure through JDBC is a TurborelException, its vendor code its
+     * SQLCODE: the server's, and the driver's own.
+     */
+    @Test
+    void failuresCarryTheirSqlcode() throws SQLException, IOException {
+        try (Connection c = LiveJdbc.connect();
+                Statement s = c.createStatement()) {
+            SQLException server = assertThrows(SQLException.class, () -> s.executeQuery("SELECT * FROM NO_SUCH_TABLE"));
+            TurborelException told = assertInstanceOf(TurborelException.class, server);
+            assertEquals(told.sqlcode(), told.getErrorCode());
+            assertTrue(told.getErrorCode() < 0);
+            SQLException own = assertThrows(SQLException.class, () -> s.setFetchSize(-1));
+            assertEquals(-910, assertInstanceOf(TurborelException.class, own).getErrorCode());
+        }
     }
 }

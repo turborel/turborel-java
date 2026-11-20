@@ -11,7 +11,7 @@ import java.util.Locale;
  * comment are not escapes.
  */
 final class Escapes {
-    /** A quote written twice, within a quoted text. */
+    /** A quote written twice, within a quoted text; or a comment's two characters, as long. */
     private static final int QUOTE_TWICE = 2;
 
     private Escapes() {}
@@ -35,9 +35,8 @@ final class Escapes {
                 int end = closing(sql, i, c);
                 out.append(sql, i, end);
                 i = end;
-            } else if (sql.startsWith("--", i)) {
-                int end = sql.indexOf('\n', i);
-                end = end < 0 ? sql.length() : end;
+            } else if (comment(sql, i) > i) {
+                int end = comment(sql, i);
                 out.append(sql, i, end);
                 i = end;
             } else if (c == '{') {
@@ -68,6 +67,37 @@ final class Escapes {
         return sql.length();
     }
 
+    /**
+     * Where the comment beginning at {@code at} ends, or {@code at} if none begins there: a simple
+     * comment at its line's end, a bracketed comment past its {@code *}{@code /}, one within it
+     * nested, needing its own (ISO/IEC 9075-2:2023 §5.2 SR11).
+     */
+    private static int comment(String sql, int at) {
+        if (sql.startsWith("--", at)) {
+            int end = sql.indexOf('\n', at);
+            return end < 0 ? sql.length() : end;
+        }
+        if (!sql.startsWith("/*", at)) {
+            return at;
+        }
+        int depth = 0;
+        int i = at;
+        while (i < sql.length()) {
+            if (sql.startsWith("/*", i)) {
+                depth++;
+                i += QUOTE_TWICE;
+            } else if (sql.startsWith("*/", i)) {
+                i += QUOTE_TWICE;
+                if (--depth == 0) {
+                    return i;
+                }
+            } else {
+                i++;
+            }
+        }
+        return sql.length();
+    }
+
     /** Where the escape beginning at {@code at} closes. */
     private static int matching(String sql, int at) throws SQLException {
         int depth = 0;
@@ -76,6 +106,10 @@ final class Escapes {
             char c = sql.charAt(i);
             if (c == '\'' || c == '"') {
                 i = closing(sql, i, c);
+                continue;
+            }
+            if (comment(sql, i) > i) {
+                i = comment(sql, i);
                 continue;
             }
             if (c == '{') {

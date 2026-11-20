@@ -11,8 +11,8 @@ class EscapesTest {
     /**
      * Verifies: [DESIGN] D2 JDBC's escapes are translated: dates, times and timestamps as
      * literals, a call as CALL, a function and an outer join as themselves, a LIKE's escape as
-     * ESCAPE, nested ones too; braces in a literal, a delimited identifier or a comment are no
-     * escape; SQL with no brace is as it is.
+     * ESCAPE, nested ones too; braces in a literal, a delimited identifier or a comment, simple or
+     * bracketed and nested, are no escape; SQL with no brace is as it is.
      */
     @Test
     void escapesAreTranslated() throws SQLException {
@@ -32,6 +32,11 @@ class EscapesTest {
         assertEquals("VALUES 'it''s {x}'", Escapes.translate("VALUES 'it''s {x}'"));
         assertEquals("VALUES '{' -- {", Escapes.translate("VALUES '{' -- {"));
         assertEquals("VALUES '{", Escapes.translate("VALUES '{"));
+        assertEquals(
+                "VALUES /* {d} /* {t} */ {ts} */ DATE '2026-01-02'",
+                Escapes.translate("VALUES /* {d} /* {t} */ {ts} */ {d '2026-01-02'}"));
+        assertEquals("VALUES UPPER('a' /* } */)", Escapes.translate("VALUES {fn UPPER('a' /* } */)}"));
+        assertEquals("VALUES 1 /* {d", Escapes.translate("VALUES 1 /* {d"));
     }
 
     /**

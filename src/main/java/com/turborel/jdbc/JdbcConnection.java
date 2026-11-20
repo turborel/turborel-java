@@ -240,8 +240,7 @@ final class JdbcConnection implements TurborelConnection {
         if (closed) {
             return;
         }
-        closed = true;
-        statements.clear();
+        closeStatements();
         if (session.isLost()) {
             session.close();
             return;
@@ -251,6 +250,15 @@ final class JdbcConnection implements TurborelConnection {
         } finally {
             session.close();
         }
+    }
+
+    /** Marks the connection closed, and its statements and their result sets, sending nothing. */
+    private void closeStatements() {
+        closed = true;
+        for (JdbcStatement each : List.copyOf(statements)) {
+            each.connectionClosed();
+        }
+        statements.clear();
     }
 
     @Override
@@ -525,7 +533,7 @@ final class JdbcConnection implements TurborelConnection {
         if (executor == null) {
             throw Errors.misuse("abort is given an executor");
         }
-        closed = true;
+        closeStatements();
         session.close();
     }
 

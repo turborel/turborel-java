@@ -96,7 +96,9 @@ class JdbcStatement implements Statement {
     /** Takes {@code outcome} as the statement's: a result set, or a count. */
     final boolean outcome(Outcome outcome) {
         if (outcome instanceof Outcome.Rows rows) {
-            result = new JdbcResultSet(this, connection, rows.columns(), Rows.of(rows.rows())).limited(maxRows);
+            result = new JdbcResultSet(this, connection, rows.columns(), Rows.of(rows.rows()))
+                    .limited(maxRows)
+                    .cut(maxFieldSize);
             return true;
         }
         Completed done = ((Outcome.Done) outcome).completed();
@@ -109,7 +111,9 @@ class JdbcStatement implements Statement {
     /** Takes a cursor's rows as the statement's result set. */
     final boolean cursor(com.turborel.jdbc.internal.session.Statement prepared, Batch first, boolean owned) {
         Rows rows = Rows.cursor(statements(), prepared, first, fetchSize, owned);
-        result = new JdbcResultSet(this, connection, prepared.columns(), rows).limited(maxRows);
+        result = new JdbcResultSet(this, connection, prepared.columns(), rows)
+                .limited(maxRows)
+                .cut(maxFieldSize);
         return true;
     }
 
@@ -356,6 +360,19 @@ class JdbcStatement implements Statement {
             closeResult();
         } finally {
             connection.statementClosed(this);
+        }
+    }
+
+    /**
+     * Closes the statement as its connection closes: it and its result set closed, nothing sent,
+     * as the session that held them ends.
+     */
+    final void connectionClosed() {
+        closed = true;
+        JdbcResultSet made = result;
+        result = null;
+        if (made != null) {
+            made.connectionClosed();
         }
     }
 

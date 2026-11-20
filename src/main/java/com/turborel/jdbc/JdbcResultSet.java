@@ -3,6 +3,8 @@ package com.turborel.jdbc;
 import com.turborel.jdbc.internal.codec.Column;
 import com.turborel.jdbc.internal.codec.Lob;
 import com.turborel.jdbc.internal.codec.LobKind;
+import com.turborel.jdbc.internal.codec.OctetValue;
+import com.turborel.jdbc.internal.codec.Octets;
 import com.turborel.jdbc.internal.codec.Value;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -24,6 +26,7 @@ import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +51,9 @@ final class JdbcResultSet extends ResultSetByName {
     private int fetchSize;
     private @Nullable SQLWarning warnings;
 
+    /** The most octets of a character or binary string read, none if 0. */
+    private int fieldOctets;
+
     /**
      * A result set of {@code columns}, its rows from {@code rows}.
      *
@@ -67,6 +73,35 @@ final class JdbcResultSet extends ResultSetByName {
     JdbcResultSet limited(long most) {
         limit = most;
         return this;
+    }
+
+    /**
+     * Cuts each character or binary string read to at most {@code most} octets, none if 0, as the
+     * statement's most field size says: a character string at a character's end, as UTF-8 writes it.
+     */
+    JdbcResultSet cut(int most) {
+        fieldOctets = most;
+        return this;
+    }
+
+    /** {@code v} cut to {@code most} octets, if a character or binary string longer. */
+    static Value cut(Value v, int most) {
+        if (v instanceof Value.Text t) {
+            int octets = 0;
+            int end = 0;
+            while (end < t.text().length()) {
+                int c = t.text().codePointAt(end);
+                octets += new String(Character.toChars(c)).getBytes(StandardCharsets.UTF_8).length;
+                if (octets > most) {
+                    return new Value.Text(t.text().substring(0, end));
+                }
+                end += Character.charCount(c);
+            }
+            return v;
+        } else if (v instanceof OctetValue.Binary b && b.octets().length() > most) {
+            return new OctetValue.Binary(Octets.of(Arrays.copyOf(b.octets().toByteArray(), most)));
+        }
+        return v;
     }
 
     /** Sets the warnings of the statement that made it. */
@@ -112,6 +147,12 @@ final class JdbcResultSet extends ResultSetByName {
         }
     }
 
+    /** Closes the result set as its connection closes: its cursor not closed, the session ending. */
+    void connectionClosed() {
+        closed = true;
+        row = null;
+    }
+
     @Override
     public boolean isClosed() {
         return closed;
@@ -129,7 +170,7 @@ final class JdbcResultSet extends ResultSetByName {
         }
         Value v = current.get(i - 1);
         wasNull = v instanceof Value.Null;
-        return v;
+        return fieldOctets > 0 ? cut(v, fieldOctets) : v;
     }
 
     @Override

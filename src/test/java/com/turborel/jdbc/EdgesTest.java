@@ -220,4 +220,52 @@ class EdgesTest {
         assertEquals(new Value.Approximate(1.5), ToValue.natural(1.5f));
         assertEquals(new Value.Approximate(2.5), ToValue.natural(2.5d));
     }
+
+    /**
+     * Verifies: [DESIGN] D2 a statement's most field size cuts each character or binary string
+     * read to that many octets, a character string at a character's end as UTF-8 writes it; a
+     * shorter one, or a value of another type, is read whole.
+     */
+    @Test
+    void fieldsAreCutToTheirMostOctets() throws SQLException {
+        assertEquals(new Value.Text("a\u00f1"), JdbcResultSet.cut(new Value.Text("a\u00f1b"), 3));
+        assertEquals(new Value.Text("a"), JdbcResultSet.cut(new Value.Text("a\u00f1b"), 2));
+        assertEquals(new Value.Text("ab"), JdbcResultSet.cut(new Value.Text("ab"), 2));
+        com.turborel.jdbc.internal.codec.OctetValue.Binary octets =
+                new com.turborel.jdbc.internal.codec.OctetValue.Binary(
+                        com.turborel.jdbc.internal.codec.Octets.of(new byte[] {1, 2, 3}));
+        assertEquals(
+                2,
+                ((com.turborel.jdbc.internal.codec.OctetValue.Binary) JdbcResultSet.cut(octets, 2))
+                        .octets()
+                        .length());
+        assertEquals(octets, JdbcResultSet.cut(octets, 3));
+        assertEquals(new Value.Truth(true), JdbcResultSet.cut(new Value.Truth(true), 1));
+        ResultSet rs = new JdbcResultSet(
+                        null,
+                        connection(),
+                        List.of(new Column("A", TEXT, false)),
+                        Rows.of(List.of(List.of(new Value.Text("abc")))))
+                .cut(2);
+        assertTrue(rs.next());
+        assertEquals("ab", rs.getString(1));
+    }
+
+    /**
+     * Verifies: [DESIGN] D2 a connection aborted closes its statements and their result sets,
+     * sending nothing; each then refuses its use.
+     */
+    @Test
+    void anAbortedConnectionClosesItsStatements() throws SQLException {
+        JdbcConnection c = connection();
+        try (JdbcStatement s = (JdbcStatement) c.createStatement()) {
+            s.outcome(new com.turborel.jdbc.internal.session.Outcome.Rows(
+                    List.of(new Column("A", TEXT, false)), List.of()));
+            ResultSet rs = s.getResultSet();
+            c.abort(Runnable::run);
+            assertTrue(c.isClosed() && s.isClosed() && rs != null && rs.isClosed());
+            assertMisuse(s::getResultSet);
+            assertMisuse(rs::next);
+        }
+    }
 }
