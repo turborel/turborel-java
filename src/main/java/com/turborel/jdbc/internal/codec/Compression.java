@@ -124,28 +124,31 @@ public final class Compression {
         }
     }
 
-    /** The stream's data, which must be exactly {@code length} bytes, the stream all of it. */
+    /**
+     * The stream's data, which must be exactly {@code length} bytes, the stream all of it: grown a
+     * chunk at a time as it inflates, so a length declared reserves nothing before data comes.
+     */
     private static byte[] inflated(byte[] stream, int length) throws TurborelException {
         Inflater inflater = new Inflater();
         try {
             inflater.setInput(stream);
-            byte[] out = new byte[length];
-            int filled = 0;
-            while (filled < length) {
-                int got = inflater.inflate(out, filled, length - filled);
+            ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(length, CHUNK));
+            byte[] chunk = new byte[CHUNK];
+            while (out.size() < length) {
+                int got = inflater.inflate(chunk, 0, Math.min(CHUNK, length - out.size()));
                 if (got == 0) {
                     break;
                 }
-                filled += got;
+                out.write(chunk, 0, got);
             }
-            if (filled < length || inflater.inflate(new byte[1]) > 0 || !inflater.finished()) {
+            if (out.size() < length || inflater.inflate(new byte[1]) > 0 || !inflater.finished()) {
                 throw Broken.connection(
                         Cite.COMPRESSED + " a compressed frame inflates to another length than it declares");
             }
             if (inflater.getRemaining() > 0) {
                 throw Broken.connection(Cite.COMPRESSED + " bytes follow a compressed frame's stream");
             }
-            return out;
+            return out.toByteArray();
         } catch (DataFormatException e) {
             throw Broken.connection(Cite.COMPRESSED + " a compressed frame's stream is not zlib: " + e.getMessage());
         } finally {

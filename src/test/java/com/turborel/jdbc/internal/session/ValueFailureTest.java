@@ -138,7 +138,8 @@ class ValueFailureTest {
 
     /**
      * Verifies: [CLIENT Connecting] Terminate reads past a Notice or a Status to the Error that
-     * ends it, and gives that failure; a Notice alone is no failure.
+     * ends it, and gives that failure, inflated first if it came compressed ([PROTOCOL Terminate
+     * 'X']); a Notice alone is no failure.
      */
     @Test
     void terminateReadsPastToItsError() throws TurborelException {
@@ -151,6 +152,20 @@ class ValueFailureTest {
         Connection quiet = after(List.of(), notice);
         quiet.terminate();
         assertTrue(quiet.isLost());
+        Writer failing2 = new Writer()
+                .bits32(-913)
+                .string("40002")
+                .string("x".repeat(2000))
+                .flag(false)
+                .flag(false)
+                .flag(false);
+        byte[] compressed = com.turborel.jdbc.internal.codec.Compression.frame((byte) 'E', failing2.toByteArray(), 0);
+        assertEquals('z', compressed[0]);
+        Connection inflating = after(List.of(Capability.COMPRESSION), notice, compressed);
+        assertEquals(
+                "40002",
+                assertThrows(TurborelException.class, inflating::terminate).getSQLState(),
+                "inflated");
     }
 
     /**

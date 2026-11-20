@@ -94,7 +94,7 @@ class ValueCodecTest {
      * Verifies: [PROTOCOL Values] tags 8, 9 and 11: a date, a time and a timestamp, each zoned,
      * precision, the displacement's i16 in the low half of a u32, and the instant in microseconds
      * of UTC, i64 as u64; displacements -12:59 and +14:00 at the edges, one past them refused
-     * with Turborel's code, SQLSTATE 22009.
+     * with Turborel's code, SQLSTATE 22009; a zoned byte other than 1 read as not zoned.
      */
     @Test
     void datetimesCarryZoneDisplacementAndInstant() throws TurborelException {
@@ -106,7 +106,10 @@ class ValueCodecTest {
         Value.Datetime date = new Value.Datetime(Value.Moment.DATE, false, 0, (short) 0, 0);
         assertEquals(date, decoded(cat(u8(8), u8(0), u8(0), u32(0), u64(0))));
         assertBroken(() -> decoded(cat(u8(11), u8(0), u8(0), u32(0x1_0000), u64(0))));
-        assertBroken(() -> decoded(cat(u8(11), u8(2), u8(0), u32(0), u64(0))));
+        assertEquals(
+                new Value.Datetime(Value.Moment.TIMESTAMP, false, 0, (short) 0, 0),
+                decoded(cat(u8(11), u8(2), u8(0), u32(0), u64(0))),
+                "a zoned byte but 1 is not zoned, as turborel-protocol reads it");
         for (short past : new short[] {841, -780}) {
             TurborelException refused = org.junit.jupiter.api.Assertions.assertThrows(
                     TurborelException.class, () -> encoded(new Value.Datetime(Value.Moment.DATE, false, 0, past, 0)));

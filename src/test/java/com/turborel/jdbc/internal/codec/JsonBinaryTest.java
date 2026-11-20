@@ -195,7 +195,8 @@ class JsonBinaryTest {
 
     /**
      * Verifies: [PROTOCOL Values] arrays and objects nest at most 128 deep: a deeper item is
-     * refused as it is written, and a deeper document as it is read.
+     * refused as it is written, and a deeper document as it is read, each past Turborel's limits
+     * (SQLCODE -900), as turborel-protocol reads it.
      */
     @Test
     void nestingIsBounded() throws TurborelException {
@@ -210,7 +211,7 @@ class JsonBinaryTest {
         assertBeyond(() -> JsonText.of(deeper));
         byte[] tooDeep =
                 cat(u8(1), u8(10), u32(1), u32(doc.length - 1), u32(0), Arrays.copyOfRange(doc, 1, doc.length));
-        assertCorrupt(() -> JsonBinary.decode(tooDeep));
+        assertBeyond(() -> JsonBinary.decode(tooDeep));
     }
 
     /**

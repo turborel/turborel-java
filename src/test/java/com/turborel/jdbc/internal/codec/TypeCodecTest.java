@@ -25,7 +25,8 @@ class TypeCodecTest {
     /**
      * Verifies: [PROTOCOL Data types] tags 1 to 7: CHARACTER and CHARACTER VARYING of a length
      * and units, exact and approximate numeric, a plug-in's type by its name and parameters, and
-     * BINARY and BINARY VARYING of a length.
+     * BINARY and BINARY VARYING of a length; a plug-in's type of more than two parameters, or one of
+     * u32's most, fails the connection, as turborel-protocol reads it.
      */
     @Test
     void theScalarTypesReadTheirParameters() throws TurborelException {
@@ -36,6 +37,8 @@ class TypeCodecTest {
         assertEquals(new DataType.ApproximateType(53), type(cat(u8(3), u32(53))));
         assertEquals(
                 new DataType.PluginType("GEO", List.of(2L, 7L)), type(cat(u8(4), str("GEO"), u32(2), u32(2), u32(7))));
+        assertBroken(() -> type(cat(u8(4), str("GEO"), u32(3), u32(1), u32(2), u32(3)))); // at most two parameters
+        assertBroken(() -> type(cat(u8(4), str("GEO"), u32(1), u32(0xFFFF_FFFFL)))); // none of u32's most
         assertEquals(new DataType.BinaryType(false, 16), type(cat(u8(6), u32(16))));
         assertEquals(new DataType.BinaryType(true, 3), type(cat(u8(7), u32(3))));
         assertCorrupt(() -> type(cat(u8(1), u32(4), u8(2))));

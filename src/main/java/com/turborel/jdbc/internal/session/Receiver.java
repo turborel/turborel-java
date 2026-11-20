@@ -5,6 +5,7 @@ import com.turborel.jdbc.internal.codec.Broken;
 import com.turborel.jdbc.internal.codec.Completed;
 import com.turborel.jdbc.internal.codec.FrameHeader;
 import com.turborel.jdbc.internal.codec.Frames;
+import com.turborel.jdbc.internal.codec.Octets;
 import com.turborel.jdbc.internal.codec.Reply;
 import com.turborel.jdbc.internal.codec.ReplyCodec;
 import java.util.Arrays;
@@ -115,8 +116,9 @@ final class Receiver {
     }
 
     /**
-     * What the server sent as it closed: each Notice or Status read past, to an Error, which is the
-     * commit's failure; nothing else is an answer to Terminate.
+     * What the server sent as it closed, each frame inflated if it came compressed: each Notice or
+     * Status read past, to an Error, which is the commit's failure; nothing else is an answer to
+     * Terminate.
      */
     void answered(byte[] rest) throws TurborelException {
         int at = 0;
@@ -125,7 +127,11 @@ final class Receiver {
                     FrameHeader.decode(Arrays.copyOfRange(rest, at, at + FrameHeader.BYTES), connection.maxBody());
             int from = at + FrameHeader.BYTES;
             int end = (int) Math.min(rest.length, (long) from + header.length());
-            Reply reply = ReplyCodec.decode(header.kind(), Arrays.copyOfRange(rest, from, end));
+            Frames.Frame frame = Frames.unwrap(
+                    new Frames.Frame(header.kind(), Octets.of(Arrays.copyOfRange(rest, from, end))),
+                    connection.told().compress() != null,
+                    connection.maxBody());
+            Reply reply = ReplyCodec.decode(frame.kind(), frame.body().toByteArray());
             if (reply instanceof Reply.Error error) {
                 throw error.failure().toException();
             }

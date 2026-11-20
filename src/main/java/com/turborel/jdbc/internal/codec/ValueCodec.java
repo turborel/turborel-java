@@ -95,7 +95,8 @@ public final class ValueCodec {
     }
 
     private static Value datetime(Value.Moment moment, Reader r) throws TurborelException {
-        boolean zoned = r.flag();
+        // Any byte but 1 is not zoned, as turborel-protocol reads it.
+        boolean zoned = r.u8() == 1;
         int precision = r.u8();
         long displacement = r.u32();
         if (displacement > LOW_HALF) {

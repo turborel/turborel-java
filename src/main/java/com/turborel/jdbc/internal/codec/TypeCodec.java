@@ -17,6 +17,12 @@ public final class TypeCodec {
     /** The byte of an XML type's namespace or element that is not named. */
     private static final int ABSENT = 0;
 
+    /** The most parameters a plug-in's type takes, as NUMERIC's precision and scale. */
+    private static final int MAX_PLUGIN_PARAMETERS = 2;
+
+    /** A parameter of {@code u32}'s most, which marks one absent and is none given. */
+    private static final Long NO_PARAMETER = 0xFFFF_FFFFL;
+
     /** The byte of an XML type's namespace or element that is named, its string after it. */
     private static final int PRESENT = 1;
 
@@ -37,7 +43,7 @@ public final class TypeCodec {
                 new DataType.CharacterType(tag == Tags.VARYING, r.u32(), CharUnits.read(r));
             case Tags.EXACT -> new DataType.ExactType(r.u32(), r.u32());
             case Tags.APPROXIMATE -> new DataType.ApproximateType(r.u32());
-            case Tags.PLUGIN -> new DataType.PluginType(r.string(), r.list(Reader::u32));
+            case Tags.PLUGIN -> plugin(r);
             case Tags.BINARY, Tags.BINARY_VARYING -> new DataType.BinaryType(tag == Tags.BINARY_VARYING, r.u32());
             case Tags.DATE, Tags.TIME, Tags.TIME_ZONED, Tags.TIMESTAMP, Tags.TIMESTAMP_ZONED ->
                 new DataType.DatetimeType(datetimeKind(tag, r), r.u32());
@@ -65,6 +71,19 @@ public final class TypeCodec {
             case Tags.UUID -> new DataType.UuidType();
             default -> throw r.malformed(Cite.TYPES, "no data type has tag " + tag);
         };
+    }
+
+    /**
+     * A plug-in's type: its name and at most two parameters, none {@code u32}'s most, which marks
+     * one absent, as turborel-protocol takes them; more fails the connection.
+     */
+    private static DataType plugin(Reader r) throws TurborelException {
+        String name = r.string();
+        List<Long> parameters = r.list(Reader::u32);
+        if (parameters.size() > MAX_PLUGIN_PARAMETERS || parameters.contains(NO_PARAMETER)) {
+            throw r.malformed(Cite.TYPES, "a type has too many parameters");
+        }
+        return new DataType.PluginType(name, parameters);
     }
 
     private static DatetimeKind datetimeKind(int tag, Reader r) throws TurborelException {

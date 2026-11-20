@@ -122,7 +122,7 @@ public final class JsonBinary {
     /** The node at {@code at}, within {@code end}, {@code depth} containers in. */
     private Parsed node(int at, int end, int depth) throws TurborelException {
         if (depth > MAX_NESTING) {
-            throw damaged("arrays and objects nest deeper than " + MAX_NESTING);
+            throw Failures.beyond(Cite.VALUES + " a JSON value's arrays and objects nest deeper than " + MAX_NESTING);
         }
         within(at, 1, end);
         int body = at + 1;
