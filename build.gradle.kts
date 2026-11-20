@@ -164,6 +164,7 @@ spotbugs {
     effort = Effort.MAX
     reportLevel = Confidence.LOW
     ignoreFailures = false
+    excludeFilter = layout.projectDirectory.file("config/spotbugs/exclude.xml")
 }
 
 jacoco {

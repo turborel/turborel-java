@@ -65,8 +65,14 @@
       <property name="scope" value="protected"/>
       <property name="allowMissingPropertyJavadoc" value="false"/>
     </module>
-    <module name="JavadocMethod"/>
-    <module name="JavadocType"/>
+    <!-- A private method's comment says why in prose; javac's doclint checks
+         the tags of every public and protected one. -->
+    <module name="JavadocMethod">
+      <property name="accessModifiers" value="public, protected"/>
+    </module>
+    <module name="JavadocType">
+      <property name="scope" value="protected"/>
+    </module>
     <module name="NonEmptyAtclauseDescription"/>
 
     <!-- R-DOC-5: no TODO comments. -->

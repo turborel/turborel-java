@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Findings SpotBugs reports that are so by design, each with its reason
+  (RULES.md R-LINT-3).
+-->
+<FindBugsFilter>
+  <!-- The reader reads a body it is given and never changes it; copying a
+       body of up to 16 MiB for each reply would cost as much as reading it. -->
+  <Match>
+    <Class name="com.turborel.jdbc.internal.codec.Reader"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>
