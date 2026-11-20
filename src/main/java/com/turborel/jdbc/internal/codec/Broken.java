@@ -25,4 +25,16 @@ public final class Broken {
     public static TurborelException connection(String message) {
         return new TurborelException(SQLCODE, SQLSTATE, message);
     }
+
+    /**
+     * Whether {@code failure} ends the connection it came on: a connection exception, class 08, but
+     * 08003, which names another connection; or credentials refused as it is made, SQLCODE -919 of
+     * class 28. A value the client cannot take, as a truth byte of 2, fails its request alone.
+     *
+     * @param failure the failure
+     * @return whether it ends the connection
+     */
+    public static boolean endsConnection(TurborelException failure) {
+        return Failure.endsConnection(failure.getErrorCode(), failure.getSQLState());
+    }
 }

@@ -29,6 +29,7 @@ public final class Reader {
 
     private final byte[] bytes;
     private final String what;
+    private final boolean stored;
     private int at;
     private int depth;
 
@@ -39,8 +40,26 @@ public final class Reader {
      * @param what what the body is, for messages, as "reply"
      */
     public Reader(byte[] bytes, String what) {
+        this(bytes, what, false);
+    }
+
+    private Reader(byte[] bytes, String what, boolean stored) {
         this.bytes = bytes;
         this.what = what;
+        this.stored = stored;
+    }
+
+    /**
+     * A reader of a value's own bytes within a body, as a Complete's condition: one malformed
+     * fails as a value damaged (SQLCODE -916, SQLSTATE TB916), the frame that holds it whole, so
+     * its request fails alone ([PROTOCOL Values and fields]).
+     *
+     * @param bytes the bytes, which the reader does not copy and never changes
+     * @param what what they are, for messages
+     * @return the reader
+     */
+    public static Reader stored(byte[] bytes, String what) {
+        return new Reader(bytes, what, true);
     }
 
     /**
@@ -48,9 +67,13 @@ public final class Reader {
      *
      * @param cite the section of the protocol it breaks, from {@link Cite}
      * @param why what is wrong
-     * @return a connection failure, for the caller to throw
+     * @return a connection failure, for the caller to throw; of a reader {@link #stored}, a value
+     *     damaged
      */
     public TurborelException malformed(String cite, String why) {
+        if (stored) {
+            return Failures.corrupt(cite + " a " + what + " is malformed at byte " + at + ": " + why);
+        }
         return Broken.connection(cite + " a " + what + " received is malformed at byte " + at + ": " + why);
     }
 

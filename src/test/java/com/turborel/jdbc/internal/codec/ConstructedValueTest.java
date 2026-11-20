@@ -165,7 +165,7 @@ class ConstructedValueTest {
         assertEquals(json.hashCode(), OctetValue.Json.of(json.item()).hashCode());
         assertEquals("Json[0102]", json.toString());
         assertNotEquals(json, ONE);
-        assertBroken(() -> decoded(cat(u8(25), bytes(hex("0202")))));
+        assertCorrupt(() -> decoded(cat(u8(25), bytes(hex("0202")))));
         assertCorrupt(() -> OctetValue.Json.ofStored(hex("01")));
     }
 

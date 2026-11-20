@@ -58,16 +58,16 @@ public final class ValueCodec {
         int tag = r.u8();
         return switch (tag) {
             case Tags.NULL -> Value.NULL;
-            case Tags.CHARACTER -> new Value.Text(r.string());
+            case Tags.CHARACTER, Tags.VARYING -> new Value.Text(r.string());
             case Tags.EXACT -> new Value.Exact(r.i128(), r.u32());
             case Tags.APPROXIMATE -> new Value.Approximate(Double.longBitsToDouble(r.u64()));
             case Tags.PLUGIN -> new OctetValue.Plugin(r.string(), r.string(), r.octets());
-            case Tags.BINARY -> new OctetValue.Binary(r.octets());
+            case Tags.BINARY, Tags.BINARY_VARYING -> new OctetValue.Binary(r.octets());
             case Tags.DATE -> datetime(Value.Moment.DATE, r);
-            case Tags.TIME -> datetime(Value.Moment.TIME, r);
-            case Tags.TIMESTAMP -> datetime(Value.Moment.TIMESTAMP, r);
+            case Tags.TIME, Tags.TIME_ZONED -> datetime(Value.Moment.TIME, r);
+            case Tags.TIMESTAMP, Tags.TIMESTAMP_ZONED -> datetime(Value.Moment.TIMESTAMP, r);
             case Tags.INTERVAL -> new Value.Interval(Qualifier.read(r), r.i128());
-            case Tags.BOOLEAN -> new Value.Truth(r.flag());
+            case Tags.BOOLEAN -> truth(r);
             case Tags.DECFLOAT -> decfloat(r);
             default -> more(tag, r);
         };
@@ -86,6 +86,10 @@ public final class ValueCodec {
             case Tags.JSON -> json(r);
             case Tags.XML -> new Value.Xml(r.string());
             case Tags.UUID -> uuid(r);
+            case Tags.CLOB, Tags.BLOB ->
+                throw Failures.corrupt(Cite.VALUES + " tag " + tag
+                        + " is a large object's type, and no value's: a large object comes as tag 20"
+                        + " or 21 (RULES.md D8)");
             default -> throw r.malformed(Cite.VALUES, "no value has tag " + tag);
         };
     }
@@ -126,13 +130,24 @@ public final class ValueCodec {
         return new Lob.Whole(kind, Octets.owning(octets));
     }
 
+    /**
+     * A JSON value: one damaged, or past Turborel's limits, fails as the value it is (SQLCODE -916,
+     * or -900), its frame whole, so its request fails alone ([PROTOCOL Values and fields]).
+     */
     private static Value json(Reader r) throws TurborelException {
-        byte[] stored = r.bytes();
-        try {
-            return OctetValue.Json.ofStored(stored);
-        } catch (TurborelException damaged) {
-            throw r.malformed(Cite.VALUES, String.valueOf(damaged.getMessage()));
+        return OctetValue.Json.ofStored(r.bytes());
+    }
+
+    /**
+     * A truth value: a byte of 0 or 1. Another fails as a value damaged (SQLCODE -916), its frame
+     * whole, so its request fails alone ([PROTOCOL Values and fields]).
+     */
+    private static Value truth(Reader r) throws TurborelException {
+        int b = r.u8();
+        if (b > 1) {
+            throw Failures.corrupt(Cite.VALUES + " " + b + " is not a truth value");
         }
+        return new Value.Truth(b == 1);
     }
 
     private static Value uuid(Reader r) throws TurborelException {

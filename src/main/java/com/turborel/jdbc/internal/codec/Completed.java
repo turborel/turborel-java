@@ -88,7 +88,7 @@ public record Completed(int sqlcode, String sqlstate, boolean active, Fields fie
         long count = r.u32();
         List<Failure> conditions = new ArrayList<>();
         for (long i = 0; i < count; i++) {
-            Reader inner = new Reader(r.bytes(), "condition");
+            Reader inner = Reader.stored(r.bytes(), "condition");
             conditions.add(Failure.read(inner));
             inner.finish();
         }

@@ -74,6 +74,17 @@ and written by each value ([PROTOCOL Values]).
 | 26 | XML | `Value.Xml`, its serialization as CONTENT | |
 | 27 | UUID | `Value.Uuid`, a `java.util.UUID` | 16 octets, most significant first (Turborel's RULES.md D184) |
 
+The page lists 1, 6, 9 and 11 as the value tags of the character,
+binary, time and timestamp types. As turborel-protocol's reader takes
+them, a value of tag 5, 7, 10 or 12, its type's tag, is read as one of
+tag 1, 6, 9 or 11: CHARACTER VARYING as CHARACTER, BINARY VARYING as
+BINARY, and TIME and TIMESTAMP WITH TIME ZONE as TIME and TIMESTAMP,
+whose bodies say they are zoned. A value of tag 18 or 19, a large
+object's type, fails its request alone (SQLCODE -916, the connection
+kept), where turborel-protocol reads it (RULES.md D8); a large object
+comes as tag 20 or 21. A truth byte other than 0 or 1, or a JSON value
+damaged, fails its request so too ([Appendix B](b-errors.md)).
+
 ## JSON items
 
 A JSON value's stored form is Turborel's binary tree; `JsonBinary`

@@ -46,9 +46,6 @@ public final class Lobs {
     /** What a stream gives at its end. */
     private static final int END = -1;
 
-    /** The SQLSTATE of octets that are not UTF-8: character not in repertoire. */
-    private static final String NOT_UTF8 = "22021";
-
     private final Connection connection;
 
     Lobs(Connection connection) {
@@ -256,7 +253,6 @@ public final class Lobs {
         private final ByteArrayOutputStream pending = new ByteArrayOutputStream();
         private long octets;
         private long characters;
-        private byte[] carry = new byte[0];
 
         Writer(LobKind kind, long locator) {
             this.kind = kind;
@@ -299,32 +295,7 @@ public final class Lobs {
         }
 
         private void append(byte[] bytes) throws TurborelException {
-            if (kind == LobKind.CHARACTER) {
-                checkUtf8(bytes, false);
-            }
             completed(new LobRequest.Append(locator, Octets.of(bytes)));
-        }
-
-        /**
-         * Checks a character large object's octets are UTF-8 as they are sent, a character an
-         * append splits carried to the next, and none left split at the end: the server at
-         * b48f85b2 does not check them as the large object is finished, so the client refuses
-         * them first (SQLSTATE 22021), as Turborel's client says the server would.
-         */
-        private void checkUtf8(byte[] bytes, boolean last) throws TurborelException {
-            byte[] all = new byte[carry.length + bytes.length];
-            System.arraycopy(carry, 0, all, 0, carry.length);
-            System.arraycopy(bytes, 0, all, carry.length, bytes.length);
-            int cut = last ? all.length : charCut(all, all.length, all.length);
-            try {
-                StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(all, 0, cut));
-            } catch (java.nio.charset.CharacterCodingException e) {
-                throw new TurborelException(
-                        Failures.DATA_SQLCODE,
-                        NOT_UTF8,
-                        "[CLIENT Large objects] a character large object's octets are not UTF-8");
-            }
-            carry = Arrays.copyOfRange(all, cut, all.length);
         }
 
         @Override
@@ -350,13 +321,13 @@ public final class Lobs {
          *
          * @return the large object
          * @throws TurborelException a connection failure; the server's: SQLSTATE 22021 if a
-         *     character one's octets are not UTF-8, 22001 if it is longer than the longest
+         *     character one's octets are not UTF-8, checked across the pieces sent, or a piece
+         *     before was refused; 22001 if it is longer than the longest. A character one that ends
+         *     within a character is refused, 22021, where it is used, as the server cannot know a
+         *     piece is the last ([PROTOCOL Lob 'L']).
          */
         public Lob.Locator finish() throws TurborelException {
             flushPending();
-            if (kind == LobKind.CHARACTER) {
-                checkUtf8(new byte[0], true);
-            }
             return new Lob.Locator(kind, locator, octets, characters);
         }
     }

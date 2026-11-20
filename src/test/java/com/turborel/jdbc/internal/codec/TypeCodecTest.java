@@ -1,6 +1,7 @@
 package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
+import static com.turborel.jdbc.internal.codec.Fixture.assertCorrupt;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.str;
 import static com.turborel.jdbc.internal.codec.Fixture.type;
@@ -37,7 +38,7 @@ class TypeCodecTest {
                 new DataType.PluginType("GEO", List.of(2L, 7L)), type(cat(u8(4), str("GEO"), u32(2), u32(2), u32(7))));
         assertEquals(new DataType.BinaryType(false, 16), type(cat(u8(6), u32(16))));
         assertEquals(new DataType.BinaryType(true, 3), type(cat(u8(7), u32(3))));
-        assertBroken(() -> type(cat(u8(1), u32(4), u8(2))));
+        assertCorrupt(() -> type(cat(u8(1), u32(4), u8(2))));
     }
 
     /**

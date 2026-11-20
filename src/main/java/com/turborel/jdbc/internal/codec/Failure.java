@@ -41,6 +41,18 @@ public record Failure(
      * @return whether it ends the connection
      */
     public boolean endsConnection() {
+        return endsConnection(sqlcode, sqlstate);
+    }
+
+    /**
+     * Whether a failure of {@code sqlcode} and {@code sqlstate} ends the connection it came on, as
+     * {@link #endsConnection()} says.
+     *
+     * @param sqlcode its SQLCODE
+     * @param sqlstate its SQLSTATE
+     * @return whether it ends the connection
+     */
+    static boolean endsConnection(int sqlcode, String sqlstate) {
         boolean connecting = sqlcode == Broken.SQLCODE;
         return (sqlstate.startsWith(CONNECTION_CLASS) && !sqlstate.equals(NO_CONNECTION))
                 || (connecting && sqlstate.startsWith(AUTHORIZATION_CLASS));

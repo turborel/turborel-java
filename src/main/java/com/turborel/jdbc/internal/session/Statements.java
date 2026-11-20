@@ -259,7 +259,7 @@ public final class Statements {
     public List<Column> describe(Cursor cursor) throws TurborelException {
         connection.needs(false, Capability.DESCRIBE);
         connection.send(new Request.Describe(true, cursor.statement().number(), cursor.number()));
-        return description(connection.receive());
+        return description(connection.receiveOne());
     }
 
     /**

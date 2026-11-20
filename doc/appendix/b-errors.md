@@ -26,7 +26,8 @@ shares, turborel-client's own wherever it has the case.
 | -301 | 22037 | Two members of a JSON object of one key, where keys are to be unique | kept |
 | -301 | 2200N | An XML value's text that is not well-formed XML content | kept |
 | -916 | TB916 | A JSON value's stored form, given by the program, damaged | kept |
-| -900 | 0A000 | Past Turborel's limits: a JSON item nested deeper than 128, or a stored form past 256 MiB; a message longer than a Java array holds; a scale past a `BigDecimal`'s | kept |
+| -916 | TB916 | A reply, its frame whole, holding a value the driver cannot take: a truth byte other than 0 or 1, a length's units neither 0 nor 1, a JSON value damaged, a Complete's condition malformed, a value of tag 18 or 19; its request fails alone, the rest of its replies read past | kept |
+| -900 | 0A000 | Past Turborel's limits: a JSON item nested deeper than 128, or a stored form past 256 MiB, given or received; a message longer than a Java array holds; a scale past a `BigDecimal`'s | kept |
 
 ## The codes the server sends
 

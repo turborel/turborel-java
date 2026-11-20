@@ -18,6 +18,7 @@ import com.turborel.jdbc.internal.codec.Writer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /** A connection's login and session over a stream the test scripts ([PROTOCOL Opening a connection]). */
@@ -347,5 +348,58 @@ class ConnectionTest {
         closed.close();
         closed.close();
         assertTrue(closed.isLost());
+    }
+
+    /** A scripted stream that records each bound set on it. */
+    private static final class Bounded implements com.turborel.jdbc.internal.transport.Duplex {
+        private final Script script;
+        final List<@Nullable Duration> bounds = new ArrayList<>();
+
+        Bounded(byte[] server) {
+            this.script = new Script(server);
+        }
+
+        @Override
+        public java.io.InputStream input() {
+            return script.input();
+        }
+
+        @Override
+        public java.io.OutputStream output() {
+            return script.output();
+        }
+
+        @Override
+        public void bound(@Nullable Duration within) {
+            bounds.add(within);
+        }
+
+        @Override
+        public void close() {
+            script.close();
+        }
+    }
+
+    /**
+     * Verifies: [CLIENT Timeouts] a stream of the program's own that bounds itself, opened within
+     * timeouts, is bounded as they say: the login by the connect timeout, each read after by the
+     * read timeout, Terminate's answer by it too; its read timeout is set as a connection's.
+     */
+    @Test
+    void aStreamOfTheProgramsOwnIsBoundedWithinTimeouts() throws TurborelException {
+        Bounded stream = new Bounded(Script.ready(List.of()));
+        com.turborel.jdbc.internal.transport.Timeouts within =
+                new com.turborel.jdbc.internal.transport.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(7));
+        Connection c = Connection.openWithin(stream, new Login("ann", new Trust()), within, Offer.none());
+        assertEquals(List.of(Duration.ofSeconds(5), Duration.ofSeconds(7)), stream.bounds);
+        assertEquals(Duration.ofSeconds(7), c.readTimeout());
+        c.setReadTimeout(Duration.ofSeconds(9));
+        assertEquals(Duration.ofSeconds(9), c.readTimeout());
+        c.terminate();
+        assertEquals(Duration.ofSeconds(9), stream.bounds.get(stream.bounds.size() - 1));
+        Bounded refused = new Bounded(Script.error("28000"));
+        assertThrows(
+                TurborelException.class,
+                () -> Connection.openWithin(refused, new Login("ann", new Trust()), within, Offer.none()));
     }
 }

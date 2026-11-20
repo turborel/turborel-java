@@ -35,7 +35,7 @@ final class Uuids {
      */
     static @Nullable UUID parse(String text) {
         String t = trim(text);
-        if (t.startsWith("{") && t.endsWith("}") && t.length() > 1) {
+        if (t.length() > 1 && t.startsWith("{") && t.endsWith("}")) {
             t = t.substring(1, t.length() - 1);
         }
         byte[] octets = new byte[OCTETS];

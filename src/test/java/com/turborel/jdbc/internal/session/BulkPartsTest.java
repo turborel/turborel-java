@@ -133,6 +133,12 @@ class BulkPartsTest {
         assertEquals(1, Lobs.charCut(text, 2, 2));
         byte[] continuations = {(byte) 0x80, (byte) 0x80};
         assertEquals(0, Lobs.charCut(continuations, 2, 1));
+        byte[] five = {(byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80};
+        assertEquals(5, Lobs.charCut(five, 5, 5), "no lead within a character's reach: as it is");
+        assertEquals(1, Lobs.charCut(new byte[] {(byte) 0x80}, 1, 1), "no lead at all: as it is");
+        assertEquals(2, Lobs.charCut(new byte[] {'a', (byte) 0xF8}, 2, 2), "a lead of no character: one octet");
+        byte[] grin = "a\uD83D\uDE00".getBytes(StandardCharsets.UTF_8);
+        assertEquals(5, Lobs.charCut(grin, 5, 5), "a four-octet character whole");
         assertEquals(2, Lobs.charCut(continuations, 2, 2), "no lead octet, all kept");
         Lob.Whole whole = Lob.Whole.ofText("aé€b");
         assertArrayEquals("é€".getBytes(StandardCharsets.UTF_8), Lobs.heldRange(whole, 1, 2, true));

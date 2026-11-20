@@ -148,27 +148,107 @@ class LiveLobsTest {
     }
 
     /**
-     * Verifies: [CLIENT Large objects] a character large object's octets are UTF-8, refused otherwise
-     * (SQLSTATE 22021), checked as they are sent, a character split between writes taken whole.
+     * Verifies: [PROTOCOL Lob 'L'] a character large object's octets are checked as UTF-8 as each
+     * Append comes: one that is not is refused (SQLSTATE 22021), and every Append after; a
+     * character split between writes is taken whole; one that ends within a character is refused,
+     * 22021, where it is used ([CLIENT Large objects]).
      */
     @Test
     void aClobsOctetsAreUtf8() throws TurborelException, IOException {
         try (Connection connection = connected()) {
+            Statements statements = connection.statements();
+            Lobs.Writer whole = connection.lobs().create(LobKind.CHARACTER);
+            whole.write(new byte[] {'a', (byte) 0xC3});
+            whole.write(new byte[] {(byte) 0xA9});
+            Lob.Locator written = whole.finish();
+            Statement echo = statements.prepare("VALUES CAST(? AS CLOB(1K))");
+            Outcome.Rows rows = (Outcome.Rows) statements.execute(echo, List.of(written));
+            assertArrayEquals(
+                    "a\u00e9".getBytes(StandardCharsets.UTF_8),
+                    ((Lob.Whole) rows.rows().get(0).get(0)).octets().toByteArray(),
+                    "a, and a character split between writes");
             Lobs.Writer writer = connection.lobs().create(LobKind.CHARACTER);
-            writer.write(new byte[] {'a', (byte) 0xC3});
-            writer.write(new byte[] {(byte) 0xA9});
-            writer.write(new byte[] {(byte) 0xFF});
+            writer.write(new byte[] {'a', (byte) 0xFF});
+            IOException refused = assertThrows(IOException.class, writer::flush);
             assertEquals(
                     "22021",
-                    assertThrows(TurborelException.class, writer::finish).getSQLState());
+                    org.junit.jupiter.api.Assertions.assertInstanceOf(TurborelException.class, refused.getCause())
+                            .getSQLState(),
+                    "refused by its Append");
+            writer.write(new byte[] {'b'});
+            assertEquals(
+                    "22021",
+                    assertThrows(TurborelException.class, writer::finish).getSQLState(),
+                    "every Append after");
             Lobs.Writer cut = connection.lobs().create(LobKind.CHARACTER);
             cut.write(new byte[] {'a', (byte) 0xC3});
+            Lob.Locator split = cut.finish();
             assertEquals(
                     "22021",
-                    assertThrows(TurborelException.class, cut::finish).getSQLState(),
-                    "a character left split");
+                    assertThrows(TurborelException.class, () -> statements.execute(echo, List.of(split)))
+                            .getSQLState(),
+                    "a character left split, where it is used");
             assertFalse(connection.isLost());
-            connection.statements().query("ROLLBACK");
+            statements.query("ROLLBACK");
+        }
+    }
+
+    /**
+     * Verifies: [PROTOCOL Lob 'L'] a multi-row INSERT of large-object {@code ?} marks keeps every
+     * value whole, each {@code ?} of its object column's type: by a locator, a long one, and held
+     * whole in its row, a short one.
+     */
+    @Test
+    void aMultiRowInsertKeepsItsLargeObjects() throws TurborelException, IOException {
+        try (Connection connection = connected()) {
+            Statements statements = connection.statements();
+            statements.query("CREATE TABLE LOB_ROWS (ID INTEGER, C CLOB(1M), B BLOB(1M))");
+            String text = "x".repeat(200_000) + "y";
+            Lobs.Writer writer = connection.lobs().create(LobKind.CHARACTER);
+            writer.write(text.getBytes(StandardCharsets.UTF_8));
+            Lob.Locator big = writer.finish();
+            byte[] octets = new byte[150_000];
+            octets[octets.length - 1] = 7;
+            Statement insert = statements.prepare("INSERT INTO LOB_ROWS VALUES (?, ?, ?), (?, ?, ?)");
+            statements.execute(
+                    insert,
+                    List.of(
+                            integer(1),
+                            big,
+                            new Lob.Whole(LobKind.BINARY, com.turborel.jdbc.internal.codec.Octets.of(octets)),
+                            integer(2),
+                            Lob.Whole.ofText("short"),
+                            new Lob.Whole(LobKind.BINARY, com.turborel.jdbc.internal.codec.Octets.of(new byte[] {1}))));
+            List<List<Value>> read = rows(
+                    statements.query(
+                            "SELECT ID, CHAR_LENGTH(C), OCTET_LENGTH(B), SUBSTRING(C FROM 200001), C FROM LOB_ROWS ORDER BY ID"));
+            assertEquals(
+                    List.of(integer(1), integer(200_001), integer(150_000), Lob.Whole.ofText("y")),
+                    read.get(0).subList(0, 4));
+            assertEquals(
+                    List.of(integer(2), integer(5), integer(1)), read.get(1).subList(0, 3));
+            assertArrayEquals(
+                    "short".getBytes(StandardCharsets.UTF_8),
+                    ((Lob.Whole) read.get(1).get(4)).octets().toByteArray());
+            statements.query("ROLLBACK");
+        }
+    }
+
+    /**
+     * Verifies: [CLIENT Running statements] a {@code ?} value longer than its column, cut to fit,
+     * completes its INSERT with the warning 01004, the value kept as cut.
+     */
+    @Test
+    void aValueCutWarns() throws TurborelException, IOException {
+        try (Connection connection = connected()) {
+            Statements statements = connection.statements();
+            statements.query("CREATE TABLE CUT_ROWS (N VARCHAR(3))");
+            Statement insert = statements.prepare("INSERT INTO CUT_ROWS VALUES (?)");
+            Outcome.Done done = (Outcome.Done) statements.execute(insert, List.of(new Value.Text("abcdef")));
+            assertEquals("01004", done.completed().sqlstate());
+            assertEquals("01004", connection.warning());
+            assertEquals(List.of(List.of(new Value.Text("abc"))), rows(statements.query("SELECT N FROM CUT_ROWS")));
+            statements.query("ROLLBACK");
         }
     }
 }

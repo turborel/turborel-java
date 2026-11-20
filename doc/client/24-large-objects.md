@@ -57,8 +57,8 @@ an `InputStream`, a chunk a request.
 
 `create` begins a new large object; its `Writer` sends what is written
 in appends of at most a chunk, a character one cut where a character
-ends, and checks a character one's octets are UTF-8 as they are sent;
-`finish` gives the value to pass as a parameter by its locator, used
+ends, the server checking a character one's octets are UTF-8 as each
+append comes; `finish` gives the value to pass as a parameter by its locator, used
 once. `free` makes a locator no longer valid, nor the value it named;
 `hold` keeps it valid past its transaction's commit.
 
@@ -68,7 +68,7 @@ once. `free` makes a locator no longer valid, nor the value it named;
 |---|---|---|
 | | 0F001 | A locator no longer valid, as one not held after its transaction's commit, or freed |
 | -301 | 22000 | `free` or `hold` of a value sent whole, which has no locator |
-| -301 | 22021 | A character large object's octets, written, that are not UTF-8, or a character left split at `finish` |
+| | 22021 | The server's: a character large object's octets, written, that are not UTF-8, and each append after; one that ends within a character, where it is used |
 | | 22001 | `finish`: a value longer than its column |
 | -919 | 08006 | A reply other than the Lob reply asked for, which loses the connection |
 

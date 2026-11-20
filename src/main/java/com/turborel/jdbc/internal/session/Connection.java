@@ -5,18 +5,15 @@ import com.turborel.jdbc.internal.auth.Mechanism;
 import com.turborel.jdbc.internal.auth.TlsChannel;
 import com.turborel.jdbc.internal.codec.Broken;
 import com.turborel.jdbc.internal.codec.CancelKey;
-import com.turborel.jdbc.internal.codec.Completed;
 import com.turborel.jdbc.internal.codec.Failures;
 import com.turborel.jdbc.internal.codec.FrameHeader;
 import com.turborel.jdbc.internal.codec.Reply;
-import com.turborel.jdbc.internal.codec.ReplyCodec;
 import com.turborel.jdbc.internal.codec.Request;
 import com.turborel.jdbc.internal.transport.Duplex;
 import com.turborel.jdbc.internal.transport.Opened;
 import com.turborel.jdbc.internal.transport.Target;
 import com.turborel.jdbc.internal.transport.Timeouts;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,9 +32,6 @@ import org.jspecify.annotations.Nullable;
 public final class Connection implements AutoCloseable {
     /** A {@code u32}'s bits: a statement's number wraps past them. */
     private static final long U32_MASK = 0xFFFF_FFFFL;
-
-    /** The class of a warning's SQLSTATE. */
-    private static final String WARNING_CLASS = "01";
 
     private final Wire wire;
     private final boolean bounded;
@@ -58,6 +52,7 @@ public final class Connection implements AutoCloseable {
     private final Controls controls = new Controls(this, statements);
     private final Lobs lobs = new Lobs(this);
     private final Bulk bulk = new Bulk(this);
+    private final Receiver receiver = new Receiver(this);
 
     private Connection(Duplex duplex, boolean bounded, Timeouts timeouts) {
         this.wire = new Wire(duplex);
@@ -91,6 +86,24 @@ public final class Connection implements AutoCloseable {
     }
 
     /**
+     * Opens a connection over a stream the program made, as {@link #open} does, its waits bounded
+     * on the stream itself as {@code timeouts} say: each step of the login by {@code connect},
+     * each read after by {@code read}, and Terminate's answer by {@code read}, else 60 seconds. Its
+     * read timeout can then be changed as a connection's ([CLIENT Timeouts]).
+     *
+     * @param duplex the stream, which bounds its own waits
+     * @param login the user and what proves it
+     * @param timeouts how long it waits
+     * @param offer what the connection asks for
+     * @return the connection, logged in
+     * @throws TurborelException as {@link #open}; a connection failure if a wait runs out
+     */
+    public static Connection openWithin(Duplex duplex, Login login, Timeouts timeouts, Offer offer)
+            throws TurborelException {
+        return bounded(duplex, login, timeouts, offer);
+    }
+
+    /**
      * Opens a connection over a stream made to a target, its waits bounded as {@code timeouts}
      * say: each step of the login by {@code connect}, each read after by {@code read}; a mechanism
      * that binds itself to its TLS channel bound to it first.
@@ -109,15 +122,22 @@ public final class Connection implements AutoCloseable {
         if (channel != null) {
             login.mechanism().bind(channel);
         }
-        Connection connection = new Connection(opened.duplex(), true, timeouts);
+        Connection connection = bounded(opened.duplex(), login, timeouts, offer);
         connection.reach = reach;
+        return connection;
+    }
+
+    /** A connection over {@code duplex}, logged in, each wait bounded on it as {@code timeouts} say. */
+    private static Connection bounded(Duplex duplex, Login login, Timeouts timeouts, Offer offer)
+            throws TurborelException {
+        Connection connection = new Connection(duplex, true, timeouts);
         try {
-            opened.duplex().bound(timeouts.connect());
+            duplex.bound(timeouts.connect());
             connection.logIn(login.user(), login.mechanism(), offer);
-            opened.duplex().bound(timeouts.read());
+            duplex.bound(timeouts.read());
             return connection;
         } catch (TurborelException failed) {
-            opened.duplex().close();
+            duplex.close();
             throw failed;
         }
     }
@@ -317,6 +337,11 @@ public final class Connection implements AutoCloseable {
         copying = underWay;
     }
 
+    /** The longest body a reply may have. */
+    int maxBody() {
+        return maxBody;
+    }
+
     /** The connection's frames, for a request the low-level client has no method of, as a copy's. */
     Wire wire() {
         return wire;
@@ -428,25 +453,9 @@ public final class Connection implements AutoCloseable {
                 Duration read = timeouts.read();
                 wire.duplex().bound(read == null ? Timeouts.TERMINATE_WITHIN : read);
             }
-            byte[] rest = wire.rest(maxBody + FrameHeader.BYTES);
-            if (rest.length >= FrameHeader.BYTES) {
-                answered(rest);
-            }
+            receiver.answered(wire.rest(maxBody + FrameHeader.BYTES));
         } finally {
             close();
-        }
-    }
-
-    /** What the server sent as it closed: an Error is the commit's failure, a notice or status nothing. */
-    private void answered(byte[] rest) throws TurborelException {
-        FrameHeader header = FrameHeader.decode(Arrays.copyOf(rest, FrameHeader.BYTES), maxBody);
-        int end = Math.min(rest.length, FrameHeader.BYTES + header.length());
-        Reply reply = ReplyCodec.decode(header.kind(), Arrays.copyOfRange(rest, FrameHeader.BYTES, end));
-        if (reply instanceof Reply.Error error) {
-            throw error.failure().toException();
-        }
-        if (!(reply instanceof Reply.Notice || reply instanceof Reply.Status || reply instanceof Reply.Pong)) {
-            throw Broken.connection("[PROTOCOL Terminate 'X'] the server answered Terminate");
         }
     }
 
@@ -518,51 +527,33 @@ public final class Connection implements AutoCloseable {
      * @throws TurborelException a connection failure, which loses the connection
      */
     Reply receive() throws TurborelException {
-        while (true) {
-            Reply reply;
-            try {
-                reply = wire.receive(maxBody, told.compress() != null);
-            } catch (TurborelException failure) {
-                throw lostBy(failure);
-            }
-            if (reply instanceof Reply.Notice notice) {
-                told.notice(notice);
-            } else if (reply instanceof Reply.Status status) {
-                told.status(status.name(), status.value());
-            } else {
-                return noted(reply);
-            }
-        }
+        return receiver.receive(true);
     }
 
-    /** The reply, its statement's end noted: whether a transaction goes on, and what it completed with. */
-    private Reply noted(Reply reply) {
-        if (reply instanceof Reply.Complete complete) {
-            Completed c = complete.completed();
-            active = c.active();
-            warning = c.sqlstate().startsWith(WARNING_CLASS) ? c.sqlstate() : null;
-            told.completed(c.fields());
-        } else if (reply instanceof Reply.Error error) {
-            active = error.failure().active();
-            warning = null;
-        } else if (reply instanceof Reply.Ready) {
-            // Ready ends a login or a ChangeUser, which renews the session as Reset does.
-            active = false;
-            warning = null;
-        } else if (opensTransaction(reply)) {
-            active = true;
-            if (reply instanceof Reply.Description) {
-                warning = null;
-            }
-        }
-        return reply;
+    /**
+     * The server's next reply, as {@link #receive()} gives it, of a request answered by that one
+     * reply after any Notice and Status, as a Describe of a cursor is by a Description no rows
+     * follow: a value it holds the client cannot take fails the request, nothing more read past.
+     *
+     * @return the reply
+     * @throws TurborelException a connection failure, which loses the connection; a value's own
+     */
+    Reply receiveOne() throws TurborelException {
+        return receiver.receive(false);
     }
 
-    /** Whether a reply means a transaction is active: a query's rows are read in one, a locator lives in one. */
-    private static boolean opensTransaction(Reply reply) {
-        boolean rows =
-                reply instanceof Reply.Description || reply instanceof Reply.Rows || reply instanceof Reply.Suspended;
-        return rows || reply instanceof Reply.LobData || reply instanceof Reply.LobLocator;
+    /** Notes a statement ended: whether a transaction goes on, and the warning it completed with. */
+    void ended(boolean on, @Nullable String warned) {
+        active = on;
+        warning = warned;
+    }
+
+    /** Notes a transaction active, as a query's rows or a locator mean, the warning gone of a Description. */
+    void opened(boolean described) {
+        active = true;
+        if (described) {
+            warning = null;
+        }
     }
 
     /**
@@ -590,7 +581,7 @@ public final class Connection implements AutoCloseable {
         return lostBy(Broken.connection(message));
     }
 
-    private TurborelException lostBy(TurborelException failure) {
+    TurborelException lostBy(TurborelException failure) {
         lost = failure;
         wire.duplex().close();
         return failure;

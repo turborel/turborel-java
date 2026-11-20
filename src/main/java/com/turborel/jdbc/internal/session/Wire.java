@@ -80,6 +80,22 @@ final class Wire {
      *     malformed or too long
      */
     Reply receive(int maxBody, boolean compression) throws TurborelException {
+        Frames.Frame frame = frame(maxBody, compression);
+        return ReplyCodec.decode(frame.kind(), frame.body().toByteArray());
+    }
+
+    /**
+     * The next frame the server sends, whole, inflated first if it came compressed and compression
+     * was granted, not yet decoded: so a value in it the client cannot take leaves the stream in
+     * step ([PROTOCOL Values and fields]).
+     *
+     * @param maxBody the longest body taken
+     * @param compression whether compression was granted
+     * @return the frame
+     * @throws TurborelException a connection failure if the connection closed, or the frame's
+     *     header or compression is malformed, or it is too long
+     */
+    Frames.Frame frame(int maxBody, boolean compression) throws TurborelException {
         byte[] head = read(FrameHeader.BYTES);
         if (head.length < FrameHeader.BYTES) {
             throw Io.failed("receive", new IOException("the connection closed"));
@@ -89,8 +105,7 @@ final class Wire {
         if (body.length != header.length()) {
             throw Io.failed("receive", new IOException("the connection closed within a reply"));
         }
-        Frames.Frame frame = Frames.unwrap(new Frames.Frame(header.kind(), Octets.of(body)), compression, maxBody);
-        return ReplyCodec.decode(frame.kind(), frame.body().toByteArray());
+        return Frames.unwrap(new Frames.Frame(header.kind(), Octets.of(body)), compression, maxBody);
     }
 
     /**

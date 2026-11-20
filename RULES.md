@@ -452,6 +452,20 @@ rule here, the rule is kept:
   file's labels in LF lines; every other file is LF (R-PLAT-3).
 - A test's private helpers need no Javadoc comment of their own.
 
+Where the driver departs from turborel-client, so every Turborel driver
+behaves alike:
+
+- A value of tag 18 or 19, a large object's type, which
+  turborel-protocol reads as a value, is refused. Its frame is whole, so
+  it fails as any value the client cannot take: its request alone,
+  SQLCODE -916 and SQLSTATE TB916, the rest of its replies read past,
+  the connection kept (`[PROTOCOL Values and fields]`).
+- Attributes past their bounds, more than 32, a name not of 1 to 64
+  bytes or a value past 1024, are refused before anything is sent, with
+  the code the server would fail the connection with, SQLCODE -919 and
+  SQLSTATE 08006, and the connection kept. turborel-client sends them,
+  and the server then fails the connection.
+
 ### This driver's own
 
 #### D9. Every failure is a `TurborelException`, a `SQLException`

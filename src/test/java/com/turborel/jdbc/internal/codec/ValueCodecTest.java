@@ -2,7 +2,9 @@ package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBeyond;
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
+import static com.turborel.jdbc.internal.codec.Fixture.assertCorrupt;
 import static com.turborel.jdbc.internal.codec.Fixture.assertOutOfRange;
+import static com.turborel.jdbc.internal.codec.Fixture.bytes;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.decoded;
 import static com.turborel.jdbc.internal.codec.Fixture.encoded;
@@ -143,7 +145,7 @@ class ValueCodecTest {
     void truthValues() throws TurborelException {
         assertArrayEquals(Fixture.hex("0E01"), encoded(new Value.Truth(true)));
         assertEquals(new Value.Truth(false), decoded(Fixture.hex("0E00")));
-        assertBroken(() -> decoded(Fixture.hex("0E02")));
+        assertCorrupt(() -> decoded(Fixture.hex("0E02")));
     }
 
     /**
@@ -176,13 +178,32 @@ class ValueCodecTest {
     }
 
     /**
-     * Verifies: [PROTOCOL Frames] a value of a tag no value has, 5, 7, 10, 12, 18, 19 or 28,
-     * fails the connection.
+     * Verifies: [PROTOCOL Frames] a value of a tag no value or type has, 28 or more, fails the
+     * connection; of 18 or 19, a large object's type, it fails as a value damaged, SQLCODE -916,
+     * its request alone (RULES.md D8).
      */
     @Test
     void aTagOfNoValueFails() {
-        for (int tag : new int[] {5, 7, 10, 12, 18, 19, 28, 255}) {
+        for (int tag : new int[] {28, 255}) {
             assertBroken(() -> decoded(u8(tag)));
         }
+        for (int tag : new int[] {18, 19}) {
+            assertCorrupt(() -> decoded(cat(u8(tag), u8(0), bytes(new byte[0]))));
+        }
+    }
+
+    /**
+     * Verifies: [PROTOCOL Values] value tags 5, 7, 10 and 12 are read as tags 1, 6, 9 and 11, as
+     * turborel-protocol's reader takes them: CHARACTER VARYING as CHARACTER, BINARY VARYING as
+     * BINARY, TIME and TIMESTAMP WITH TIME ZONE as TIME and TIMESTAMP, whose bodies say they are
+     * zoned.
+     */
+    @Test
+    void theTypesTagsOfAValueReadAsTheirKinds() throws TurborelException {
+        assertEquals(new Value.Text("ab"), decoded(cat(u8(5), str("ab"))));
+        assertEquals(new OctetValue.Binary(Octets.of(new byte[] {7})), decoded(cat(u8(7), bytes(new byte[] {7}))));
+        byte[] time = cat(u8(1), u8(3), u32(60), u64(1_000));
+        assertEquals(decoded(cat(u8(9), time)), decoded(cat(u8(10), time)));
+        assertEquals(decoded(cat(u8(11), time)), decoded(cat(u8(12), time)));
     }
 }

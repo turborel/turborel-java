@@ -32,7 +32,8 @@ public enum CharUnits {
      *
      * @param r where the byte is read
      * @return the units
-     * @throws TurborelException if the byte is neither 0 nor 1
+     * @throws TurborelException SQLSTATE TB916 if the byte is neither 0 nor 1: a type damaged, its
+     *     frame whole, so its request fails alone ([PROTOCOL Values and fields])
      */
     static CharUnits read(Reader r) throws TurborelException {
         int units = r.u8();
@@ -41,6 +42,6 @@ public enum CharUnits {
                 return each;
             }
         }
-        throw r.malformed(Cite.TYPES, "a length's units are " + units + ", neither 0 nor 1");
+        throw Failures.corrupt(Cite.TYPES + " a length's units are " + units + ", neither 0 nor 1");
     }
 }

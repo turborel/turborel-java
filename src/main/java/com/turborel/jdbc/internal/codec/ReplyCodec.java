@@ -1,6 +1,8 @@
 package com.turborel.jdbc.internal.codec;
 
 import com.turborel.jdbc.TurborelException;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Reads the server's replies ([PROTOCOL Replies]): a kind the client does not know, a body cut
@@ -30,6 +32,64 @@ public final class ReplyCodec {
         Reply reply = read(kind, r);
         r.finish();
         return reply;
+    }
+
+    /**
+     * Whether a reply of {@code kind} and {@code body} is its request's last, by the order a
+     * statement's replies keep: a Description, Rows, a Notice or a Status has more after it, a
+     * Complete has if its tail says more (tag 5), and any other reply is the last. So a request
+     * whose reply held a value the client cannot take is read past to its end ([PROTOCOL Values
+     * and fields]).
+     *
+     * @param kind the frame's kind
+     * @param body its body, which need not decode
+     * @return whether it ends its request
+     */
+    public static boolean endsRequest(byte kind, byte[] body) {
+        return switch (kind) {
+            case Reply.DESCRIPTION, Reply.ROWS, Reply.NOTICE, Reply.STATUS -> false;
+            case Reply.COMPLETE -> {
+                Completed head = completedHead(kind, body);
+                yield head == null || !head.fields().more();
+            }
+            default -> true;
+        };
+    }
+
+    /**
+     * The head of a Complete whose whole may not decode: its SQLCODE, SQLSTATE and whether a
+     * transaction is active, and of its tail the commit's position and whether more replies
+     * follow, which come before a condition, the one field of it the client may fail to take.
+     * So the session's state is noted as the whole would note it ([PROTOCOL Values and fields]).
+     *
+     * @param kind the frame's kind
+     * @param body its body
+     * @return the head, or none if the frame is no Complete or its head does not read
+     */
+    public static @Nullable Completed completedHead(byte kind, byte[] body) {
+        if (kind != Reply.COMPLETE) {
+            return null;
+        }
+        Reader r = new Reader(body, "reply");
+        try {
+            int sqlcode = r.bits32();
+            String sqlstate = r.string();
+            boolean active = r.flag();
+            Long position = null;
+            boolean more = false;
+            Tail tags = new Tail(Tail.COMPLETE);
+            for (int tag = tags.next(r); tag == Tail.POSITION || tag == Tail.MORE; tag = tags.next(r)) {
+                if (tag == Tail.POSITION) {
+                    position = r.u64();
+                } else {
+                    more = true;
+                }
+            }
+            return new Completed(
+                    sqlcode, sqlstate, active, new Completed.Fields(position, more, null, List.of(), List.of(), null));
+        } catch (TurborelException cut) {
+            return null;
+        }
     }
 
     private static Reply read(byte kind, Reader r) throws TurborelException {

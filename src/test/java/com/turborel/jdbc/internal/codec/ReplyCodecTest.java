@@ -1,6 +1,7 @@
 package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
+import static com.turborel.jdbc.internal.codec.Fixture.assertCorrupt;
 import static com.turborel.jdbc.internal.codec.Fixture.bytes;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.hex;
@@ -9,6 +10,7 @@ import static com.turborel.jdbc.internal.codec.Fixture.u32;
 import static com.turborel.jdbc.internal.codec.Fixture.u64;
 import static com.turborel.jdbc.internal.codec.Fixture.u8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.turborel.jdbc.TurborelException;
 import java.math.BigInteger;
@@ -93,7 +95,7 @@ class ReplyCodecTest {
                 "WARNING",
                 Objects.requireNonNull(tail.conditions().get(0).diagnostics()).get(DiagnosticField.SEVERITY));
         assertEquals(new Timing(1, 2, 3), tail.time());
-        assertBroken(() -> decode('K', COMPLETE_OK, u8(17), u32(1), bytes(cat(condition, u8(0)))));
+        assertCorrupt(() -> decode('K', COMPLETE_OK, u8(17), u32(1), bytes(cat(condition, u8(0)))));
     }
 
     /**
@@ -188,8 +190,9 @@ class ReplyCodecTest {
 
     /**
      * Verifies: [PROTOCOL Errors and notices] a malformed message fails the connection with
-     * SQLCODE -919 and SQLSTATE 08006 and nothing else: bodies generated from a fixed seed, of
-     * every kind, decode or fail so, never with another exception.
+     * SQLCODE -919 and SQLSTATE 08006, and a value the client cannot take, as a truth byte of 2,
+     * fails as damaged, SQLCODE -916 ([PROTOCOL Values and fields]); nothing else: bodies
+     * generated from a fixed seed, of every kind, decode or fail so, never with another exception.
      */
     @Test
     void generatedBodiesFailOnlyAsTheConnection() {
@@ -205,8 +208,48 @@ class ReplyCodecTest {
             try {
                 ReplyCodec.decode(kind, body);
             } catch (TurborelException failure) {
-                assertEquals(Broken.SQLCODE, failure.sqlcode(), failure.getMessage());
+                assertTrue(
+                        failure.sqlcode() == Broken.SQLCODE || failure.sqlcode() == Failures.CORRUPT_SQLCODE,
+                        failure.getMessage());
             }
         }
+    }
+
+    /**
+     * Verifies: [PROTOCOL Values and fields] which reply is its request's last, by its kind alone:
+     * a Description, Rows, a Notice or a Status has more after it, a Complete has if its tail
+     * says more, one whose head does not read none, and any other reply is the last; a
+     * Complete's head reads whatever follows its tag 5, and none of another kind or cut short.
+     */
+    @Test
+    void theLastReplyOfARequestIsToldByItsKind() throws TurborelException {
+        for (byte kind : new byte[] {Reply.DESCRIPTION, Reply.ROWS, Reply.NOTICE, Reply.STATUS}) {
+            assertTrue(!ReplyCodec.endsRequest(kind, new byte[0]));
+        }
+        byte[] more = cat(COMPLETE_OK, u8(4), u64(9), u8(5), u8(17), u32(1), bytes(new byte[] {1}));
+        assertTrue(!ReplyCodec.endsRequest(Reply.COMPLETE, more));
+        assertTrue(ReplyCodec.endsRequest(Reply.COMPLETE, COMPLETE_OK));
+        assertTrue(ReplyCodec.endsRequest(Reply.COMPLETE, new byte[] {1}), "a head cut short ends it");
+        assertTrue(ReplyCodec.endsRequest(Reply.ERROR, new byte[0]));
+        Completed head = ReplyCodec.completedHead(Reply.COMPLETE, more);
+        assertEquals(9L, head == null ? null : head.fields().position());
+        assertTrue(head != null && head.fields().more());
+        assertEquals(null, ReplyCodec.completedHead(Reply.ROWS, COMPLETE_OK));
+        assertEquals(null, ReplyCodec.completedHead(Reply.COMPLETE, cat(COMPLETE_OK, u8(4), u8(1))));
+        Completed rows = ReplyCodec.completedHead(Reply.COMPLETE, cat(COMPLETE_OK, u8(6), u64(3)));
+        assertTrue(rows != null && rows.fields().rows() == null, "the head alone: no tag past 5");
+    }
+
+    /**
+     * Verifies: [PROTOCOL Errors and notices] a failure ends its connection if it is of SQLSTATE
+     * class 08 but 08003, or of class 28 and SQLCODE -919; a value damaged, TB916, ends none.
+     */
+    @Test
+    void whichFailuresEndTheConnection() {
+        assertTrue(Broken.endsConnection(Broken.connection("x")));
+        assertTrue(!Broken.endsConnection(new TurborelException(-919, "08003", "another")));
+        assertTrue(Broken.endsConnection(new TurborelException(-919, "28000", "refused")));
+        assertTrue(!Broken.endsConnection(new TurborelException(-551, "28000", "a statement's")));
+        assertTrue(!Broken.endsConnection(Failures.corrupt("damaged")));
     }
 }

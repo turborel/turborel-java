@@ -49,7 +49,10 @@ connection itself ends it: an Error the server sends of SQLSTATE class
 at a login or a change of user; and every
 failure the driver raises of the connection, SQLCODE -919 and SQLSTATE
 08006: a reply malformed or too long, the stream failing, a wait that
-runs out. A connection lost takes no more: `isLost` says so, and each
+runs out. A reply whose frame is whole but holds a value the driver
+cannot take, as a truth byte of 2 or a JSON value damaged, fails its
+statement alone, SQLCODE -916 or -900, once the rest of the statement's
+replies are read past, and the connection goes on. A connection lost takes no more: `isLost` says so, and each
 later request fails with the failure that lost it. The codes the driver
 raises itself are listed in [Appendix B](../appendix/b-errors.md).
 

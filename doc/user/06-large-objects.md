@@ -21,8 +21,9 @@ A connection's `lobs().create` begins a new large object, its `Writer`
 an `OutputStream`: what is written goes to the server in appends of at
 most 256 KiB, a character large object's cut where a character ends, so
 a character split between two writes is sent whole. Its octets must be
-UTF-8; octets that are not are refused as they are written (SQLSTATE
-22021). `finish` gives the value, a `Lob.Locator`, to pass as a
+UTF-8: the server checks them as each append comes, refusing one that
+is not and every append after (SQLSTATE 22021), and refuses a value
+that ends within a character where it is used. `finish` gives the value, a `Lob.Locator`, to pass as a
 parameter, valid until its transaction ends. A short value may go whole
 instead, as `Lob.Whole.ofText`.
 

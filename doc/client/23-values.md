@@ -49,7 +49,9 @@ what is beneath them.
 
 | SQLSTATE | SQLCODE | When |
 |---|---|---|
-| 08006 | -919 | A value or a type received is malformed: a tag of none, a body cut short, a flag neither 0 nor 1, a string not UTF-8, a JSON value damaged, parts nested too deep. The connection fails. |
+| 08006 | -919 | A value or a type received is malformed: a tag of none, a body cut short, a flag neither 0 nor 1, a string not UTF-8, parts nested too deep. The connection fails. |
+| TB916 | -916 | A value or a type received that the client cannot take, its frame whole: a truth byte other than 0 or 1, a length's units neither 0 nor 1, a JSON value damaged, a condition of a Complete malformed, a value of tag 18 or 19. Its request fails alone, the rest of its replies read past; the connection goes on. |
+| 0A000 | -900 | A JSON value received past Turborel's limits: its request fails alone, and the connection goes on. |
 | 22003 | -301 | A value given cannot be carried: a number past its field, a DECFLOAT of more than 34 digits or past its exponents. Nothing is sent. |
 | 22021 | -301 | A string given is not Unicode: it holds a lone surrogate. Nothing is sent. |
 | TB916 | -916 | A JSON value's stored form given is damaged. |

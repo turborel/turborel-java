@@ -56,7 +56,3 @@ Nothing is open. Every row M7 named is done.
 - The sample frames: P-FRAMES-1 to P-FRAMES-4, every frame of
   `doc/client/05-protocol-frames.tsv` decoded or encoded as it says, at a
   pinned commit of Turborel.
-- A value the client cannot take fails its request alone, the rest of
-  its replies read past and the connection kept: P-FIELD-10, C-RUN-9.
-- Terminate reading past a Notice or Status to its Error: C-CONN-14.
-- A stream of the program's own bounded within Timeouts: C-TIME-7.
