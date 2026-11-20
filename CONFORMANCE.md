@@ -882,17 +882,17 @@ later decision of RULES.md.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| S-API-1 | `Driver`, found by `ServiceLoader`, of `jdbc:turborel:` URLs | `[DESIGN] D2` | not yet |
-| S-API-2 | `Connection`: autocommit, isolation, savepoints, `isValid` by Ping | `[DESIGN] D2` | not yet |
-| S-API-3 | `Statement` and `PreparedStatement`: batches, generated keys, the rows affected | `[DESIGN] D2` | not yet |
-| S-API-4 | `CallableStatement` | `[DESIGN] D2` | not yet |
-| S-API-5 | `ResultSet`, forward-only and read-only, of every value type | `[DESIGN] D2` | not yet |
-| S-API-6 | `ResultSetMetaData` and `ParameterMetaData` | `[DESIGN] D2` | not yet |
-| S-API-7 | `DatabaseMetaData`, from the Information Schema | `[DESIGN] D2` | not yet |
-| S-API-8 | `Blob`, `Clob` and `SQLXML` over locators | `[DESIGN] D2` | not yet |
-| S-API-9 | `DataSource` | `[DESIGN] D2` | not yet |
-| S-API-10 | `SQLWarning` of notices and conditions | `[DESIGN] D2` | not yet |
-| S-API-11 | `Statement.cancel` and query timeouts by Cancel | `[DESIGN] D2` | not yet |
-| S-API-12 | `unwrap` to the driver's own interfaces for what JDBC has no place for | `[DESIGN] D2` | not yet |
-| S-API-13 | Every failure a `TurborelException`, its SQLCODE the vendor code | `[DESIGN] D9` | not yet |
-| S-API-14 | Loaded by DBeaver and DataGrip as they load a JDBC driver | `[DESIGN] D2` | not yet |
+| S-API-1 | `Driver`, found by `ServiceLoader`, of `jdbc:turborel:` URLs | `[DESIGN] D2` | done |
+| S-API-2 | `Connection`: autocommit, isolation, savepoints, `isValid` by Ping | `[DESIGN] D2` | done |
+| S-API-3 | `Statement` and `PreparedStatement`: batches, generated keys, the rows affected | `[DESIGN] D2` | done |
+| S-API-4 | `CallableStatement` | `[DESIGN] D2` | done |
+| S-API-5 | `ResultSet`, forward-only and read-only, of every value type | `[DESIGN] D2` | done |
+| S-API-6 | `ResultSetMetaData` and `ParameterMetaData` | `[DESIGN] D2` | done |
+| S-API-7 | `DatabaseMetaData`, from the Information Schema | `[DESIGN] D2` | done |
+| S-API-8 | `Blob`, `Clob` and `SQLXML` over locators | `[DESIGN] D2` | done |
+| S-API-9 | `DataSource` | `[DESIGN] D2` | done |
+| S-API-10 | `SQLWarning` of notices and conditions | `[DESIGN] D2` | done |
+| S-API-11 | `Statement.cancel` and query timeouts by Cancel | `[DESIGN] D2` | done |
+| S-API-12 | `unwrap` to the driver's own interfaces for what JDBC has no place for | `[DESIGN] D2` | done |
+| S-API-13 | Every failure a `TurborelException`, its SQLCODE the vendor code | `[DESIGN] D9` | done |
+| S-API-14 | Loaded by DBeaver and DataGrip as they load a JDBC driver | `[DESIGN] D2` | done |

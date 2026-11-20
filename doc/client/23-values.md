@@ -41,9 +41,9 @@ by `Value.Uuid.parse`, read as CAST reads it; `octets()` and `text()`
 give them back, whatever types the program registered.
 
 The package is the driver's own and the module does not export it. A
-program reaches values through JDBC, from milestone M7, and through the
-driver's own interfaces beyond JDBC; this page describes what is
-beneath them.
+program reaches values through JDBC
+([ResultSet and Metadata](04-api-result-sets.md)); this page describes
+what is beneath them.
 
 ## ERRORS
 

@@ -38,7 +38,7 @@ public enum LobKind { CHARACTER, BINARY }
 ```
 
 These packages are not exported by the module (RULES.md D2): JDBC's
-`Clob` and `Blob` rest on them, from milestone M7.
+`Clob` and `Blob` rest on them ([ResultSet and Metadata](04-api-result-sets.md)).
 
 ## DESCRIPTION
 

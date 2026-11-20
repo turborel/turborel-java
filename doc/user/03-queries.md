@@ -5,8 +5,9 @@
 A program runs a statement over a connection and reads what it gave: a
 query's columns and rows, or another statement's completion. This
 chapter tells how, with the low-level client, as
-[Connecting](02-connecting.md) does: until the JDBC classes come at
-milestone M7, a connection's `statements()` runs its statements. The
+[Connecting](02-connecting.md) does: a connection's `statements()`
+runs its statements, as JDBC's statements do beneath
+([Statement](../client/03-api-statements.md)). The
 examples' server is the one that chapter connects to, and its table is
 made so:
 

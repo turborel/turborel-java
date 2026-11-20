@@ -47,10 +47,7 @@ Nothing is open. Every row M6 named is done.
 
 ## M7 Standard API
 
-- The standard API (RULES.md D2): the S-API rows.
-- The manual: the chapter Installing, the API Reference's pages of the
-  standard API, and every page the earlier milestones filled checked
-  again against the code, every example run.
+Nothing is open. Every row M7 named is done.
 
 ## M8 Parity audit
 

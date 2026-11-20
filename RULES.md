@@ -317,7 +317,8 @@ statements, result sets, metadata and a `javax.sql.DataSource`. GUI
 tools, DBeaver and DataGrip among them, load a JDBC driver as it is,
 which is why the Java driver comes first among Turborel's. The error is
 `TurborelException` (D9), a `SQLException`. An exact number is a
-`BigDecimal`. What JDBC has no place for a program reaches by `unwrap`,
+`BigDecimal`, unless its column was declared SMALLINT, INTEGER or
+BIGINT (D14). What JDBC has no place for a program reaches by `unwrap`,
 JDBC 4.3's `Wrapper`, from a JDBC object to an interface of the exported
 package; the low-level client itself lives in packages the module does
 not export, so it may change without breaking a program.
@@ -542,9 +543,8 @@ and JDBC numbers it: `getColumnType` gives `Types.INTEGER`, `SMALLINT`,
 name, and `getObject` an `Integer` of an INTEGER or a SMALLINT, a `Long`
 of a BIGINT and a `Double` of a FLOAT, as JDBC maps them. An array's
 elements take the element type its declared type writes. Where no
-declared type is told, of an expression the server types as its tag
-does, or of a server that does not grant the capability, the column is
-mapped as the tag says: an exact number is DECIMAL of its precision and
+declared type is told, of a server that does not grant the capability,
+the column is mapped as the tag says: an exact number is DECIMAL of its precision and
 scale and `getObject` gives a `BigDecimal` (D2), an approximate number
 REAL to 24 binary digits and DOUBLE past them, a datetime of its kind,
 and so on. The driver does not guess a declared type the server did not

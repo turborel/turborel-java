@@ -9,11 +9,13 @@ user, and how that user is proved; over TLS; within which timeouts; what
 it asks of the server and what the server tells it; and how it ends, or
 its statement is cancelled.
 
-The standard API's way of connecting, by a `jdbc:turborel:` URL, comes
-at milestone M7. Until then this chapter shows the driver's low-level
-client, which JDBC's classes rest on. It lives in packages the module
-does not export (RULES.md D2), so its names may change; the examples run
-with the driver's classes on the class path. The server of the examples
+Through JDBC a program connects by a `jdbc:turborel:` URL, whose
+settings are the ones this chapter tells of ([Driver](../client/01-api-driver.md),
+[Installing](01-installing.md)). This chapter shows the driver's
+low-level client, which JDBC's classes rest on, as it shows what a
+connection does step by step. It lives in packages the module does not
+export (RULES.md D2), so its names may change; the examples run with
+the driver's classes on the class path. The server of the examples
 listens at 127.0.0.1, port 17434, and at the Unix socket
 `turborel.sock`, with TLS, its owner ANN, whose password is `ann's`.
 

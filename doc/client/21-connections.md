@@ -119,8 +119,9 @@ public record Timeouts(@Nullable Duration connect, @Nullable Duration read) {
 ```
 
 These packages are not exported by the module (RULES.md D2): JDBC's
-classes rest on them, and from milestone M7 a program reaches what JDBC
-has no place for by `unwrap`. A connection's `statements()` are told in
+classes rest on them, and a program reaches what the server told the
+session by `unwrap(TurborelConnection.class)`
+([Connection](02-api-connection.md)). A connection's `statements()` are told in
 [Statements and Cursors](22-statements.md), with what `told()` gives of
 a completion, and `controls()` several statements in one request and
 query attributes too.

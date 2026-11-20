@@ -7,7 +7,8 @@ protocol, 1 to 27, to the Java type the driver's codec gives and takes,
 with the bounds of each. The codec's classes are in the package
 `com.turborel.jdbc.internal.codec`, which the module does not export:
 what a program sees through JDBC, `getObject` and the `java.sql.Types`
-of each column, comes with the standard API at milestone M7. A number
+of each column, is told in
+[ResultSet and Metadata](../client/04-api-result-sets.md). A number
 the protocol writes as a `u32` is held in a Java `long`, 0 to
 4294967295, and a `u64` in a `long`'s bits, read as unsigned.
 
@@ -36,6 +37,14 @@ As a column's or a parameter's type, read by `TypeCodec`
 | 25 | JSON | `DataType.JsonType` |
 | 26 | XML | `DataType.XmlType`: primary and secondary modifiers, and of XMLSCHEMA the schema, namespace and element |
 | 27 | UUID | `DataType.UuidType` |
+
+Granted `declared-types`, a column of a Prepared or a Description also
+carries the type it was declared with, `Column.declared()`, a
+`Declared` of its name and its type as SQL writes it
+([PROTOCOL Declared types]): SMALLINT, INTEGER, BIGINT, DECIMAL and
+NUMERIC are all tag 2, and REAL, DOUBLE PRECISION and FLOAT all tag 3.
+`Column.typeWritten()` gives the declared type, else the type the tag
+says, as `TypeText` writes it.
 
 Types nest at most 16 deep; a deeper type fails the connection.
 

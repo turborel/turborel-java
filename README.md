@@ -33,9 +33,11 @@ The driver is built in milestones, M0 to M8. Its low-level client
 connects, runs and prepares statements, controls its session, reads and
 writes large objects, copies, imports and exports rows, and connects by
 settings to one of several servers, pipelines requests, pools
-connections and holds an SQL-agent's named connections; the JDBC
-classes come with M7. [CONFORMANCE.md](CONFORMANCE.md) shows what is done,
-row by row, and [TODO.md](TODO.md) what is open.
+connections and holds an SQL-agent's named connections; and over it
+JDBC 4.3's driver, connections, statements, result sets and metadata
+serve programs and database tools, DBeaver and DataGrip among them.
+[CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by row, and
+[TODO.md](TODO.md) what is open.
 
 ## Requirements
 
@@ -64,9 +66,8 @@ D10); if Gradle does not find them, name their homes with
 
 ## A first query
 
-This is what the standard API will be once milestone M7 builds it and
-M8's audit checks it. None of it runs yet, and its names may change
-until then.
+Through JDBC, as any driver is used; the driver is found by its
+`jdbc:turborel:` URLs ([Installing](doc/user/01-installing.md)).
 
 ```java
 import java.sql.Connection;

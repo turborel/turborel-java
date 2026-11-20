@@ -75,7 +75,7 @@ public final class Connection {
 ```
 
 These packages are not exported by the module (RULES.md D2): JDBC's
-classes rest on them, from milestone M7.
+classes rest on them ([Statement](03-api-statements.md)).
 
 ## DESCRIPTION
 
