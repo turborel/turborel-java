@@ -3,6 +3,8 @@ package com.turborel.jdbc.internal.codec;
 import static com.turborel.jdbc.internal.codec.Fixture.assertBeyond;
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
 import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
+import static com.turborel.jdbc.internal.codec.Fixture.assertNotInRepertoire;
+import static com.turborel.jdbc.internal.codec.Fixture.assertOutOfRange;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.hex;
 import static com.turborel.jdbc.internal.codec.Fixture.reader;
@@ -77,8 +79,8 @@ class FieldsTest {
         for (BigInteger edge : List.of(Writer.I128_MIN, Writer.I128_MAX, BigInteger.ZERO, BigInteger.valueOf(-2))) {
             assertEquals(edge, reader(new Writer().i128(edge).toByteArray()).i128());
         }
-        assertMisuse(() -> new Writer().i128(Writer.I128_MAX.add(BigInteger.ONE)));
-        assertMisuse(() -> new Writer().i128(Writer.I128_MIN.subtract(BigInteger.ONE)));
+        assertOutOfRange(() -> new Writer().i128(Writer.I128_MAX.add(BigInteger.ONE)));
+        assertOutOfRange(() -> new Writer().i128(Writer.I128_MIN.subtract(BigInteger.ONE)));
     }
 
     /**
@@ -87,10 +89,10 @@ class FieldsTest {
      */
     @Test
     void aNumberPastItsFieldIsRefused() {
-        assertMisuse(() -> new Writer().u8(256));
-        assertMisuse(() -> new Writer().u8(-1));
-        assertMisuse(() -> new Writer().u32(0x1_0000_0000L));
-        assertMisuse(() -> new Writer().u32(-1));
+        assertOutOfRange(() -> new Writer().u8(256));
+        assertOutOfRange(() -> new Writer().u8(-1));
+        assertOutOfRange(() -> new Writer().u32(0x1_0000_0000L));
+        assertOutOfRange(() -> new Writer().u32(-1));
     }
 
     /**
@@ -121,7 +123,7 @@ class FieldsTest {
         assertEquals("", reader(hex("00000000")).string());
         assertBroken(() -> reader(hex("02000000 C328")).string());
         assertBroken(() -> reader(hex("03000000 EDA080")).string());
-        assertMisuse(() -> new Writer().string("\uD83D"));
+        assertNotInRepertoire(() -> new Writer().string("\uD83D"));
     }
 
     /**

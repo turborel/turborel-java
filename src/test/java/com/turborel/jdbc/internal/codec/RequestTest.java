@@ -1,6 +1,7 @@
 package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
+import static com.turborel.jdbc.internal.codec.Fixture.assertOutOfRange;
 import static com.turborel.jdbc.internal.codec.Fixture.bytes;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.hex;
@@ -96,7 +97,7 @@ class RequestTest {
     @Test
     void prepare() throws TurborelException {
         assertArrayEquals(frame('P', u32(7), str("SELECT 1")), new Request.Prepare(7, "SELECT 1").encode());
-        assertMisuse(() -> new Request.Prepare(-1, "X").encode());
+        assertOutOfRange(() -> new Request.Prepare(-1, "X").encode());
     }
 
     /**

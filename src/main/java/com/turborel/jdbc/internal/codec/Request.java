@@ -73,7 +73,8 @@ public sealed interface Request
      * The request as a frame.
      *
      * @return its header, then its body
-     * @throws TurborelException if a field is past what it holds (SQLCODE -910)
+     * @throws TurborelException if a field is past what it holds (SQLCODE -301, SQLSTATE 22003),
+     *     or a string is not Unicode (22021)
      */
     byte[] encode() throws TurborelException;
 

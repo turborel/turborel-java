@@ -95,8 +95,8 @@ public final class JsonBinary {
      *
      * @param stored the stored form
      * @return the item
-     * @throws TurborelException if the octets are damaged (SQLCODE -910, as the program's, or the
-     *     reader makes it a connection failure, as a reply's)
+     * @throws TurborelException if the octets are damaged (SQLCODE -916, SQLSTATE TB916, as the
+     *     program's, or the reader makes it a connection failure, as a reply's)
      */
     public static JsonItem decode(byte[] stored) throws TurborelException {
         if (stored.length < SHORTEST || stored[0] != FORMAT_VERSION) {
@@ -116,7 +116,7 @@ public final class JsonBinary {
      * @return the failure
      */
     static TurborelException damaged(String why) {
-        return Failures.misuse(Cite.VALUES + " a JSON value's stored form is damaged: " + why);
+        return Failures.corrupt(Cite.VALUES + " a JSON value's stored form is damaged: " + why);
     }
 
     /** The node at {@code at}, within {@code end}, {@code depth} containers in. */

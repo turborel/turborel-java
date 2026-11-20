@@ -38,11 +38,11 @@ final class Decfloats {
         long exponent = -(long) stripped.scale();
         int digits = stripped.precision();
         if (digits > MAX_DIGITS) {
-            throw Failures.misuse(Cite.VALUES + " " + number + " needs more than DECFLOAT's 34 digits");
+            throw Failures.outOfRange(Cite.VALUES + " " + number + " needs more than DECFLOAT's 34 digits");
         }
         long adjusted = exponent + digits - 1;
         if (adjusted < MIN_ADJUSTED || adjusted > MAX_ADJUSTED) {
-            throw Failures.misuse(Cite.VALUES + " " + number + " is past DECFLOAT's range of exponents");
+            throw Failures.outOfRange(Cite.VALUES + " " + number + " is past DECFLOAT's range of exponents");
         }
         return new Value.Decfloat(stripped.unscaledValue(), (int) exponent);
     }

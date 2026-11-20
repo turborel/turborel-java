@@ -1,6 +1,7 @@
 package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBeyond;
+import static com.turborel.jdbc.internal.codec.Fixture.assertCorrupt;
 import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.hex;
@@ -122,8 +123,8 @@ class JsonBinaryTest {
         byte[] doc = cat(u8(1), u8(9), u8(2), u64(1_000_000L), hex("D4FE"), u8(1), u8(3));
         assertArrayEquals(doc, JsonBinaryWriter.encode(scalar(d)));
         assertEquals(scalar(d), JsonBinary.decode(doc));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(9), u8(3), u64(0), hex("0000"), u8(0), u8(0))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(9), u8(0), u64(0), hex("0000"), u8(2), u8(0))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(9), u8(3), u64(0), hex("0000"), u8(0), u8(0))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(9), u8(0), u64(0), hex("0000"), u8(2), u8(0))));
     }
 
     /**
@@ -162,23 +163,23 @@ class JsonBinaryTest {
                 new JsonItem.Member("b", scalar(new Value.Truth(true))))));
         for (int cut = 0; cut < good.length; cut++) {
             byte[] prefix = Arrays.copyOf(good, cut);
-            assertMisuse(() -> JsonBinary.decode(prefix));
+            assertCorrupt(() -> JsonBinary.decode(prefix));
         }
-        assertMisuse(() -> JsonBinary.decode(cat(good, u8(0))));
-        assertMisuse(() -> JsonBinary.decode(hex("0200")));
-        assertMisuse(() -> JsonBinary.decode(hex("010C")));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(10), u32(1), u32(1), u32(1), u8(0))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(10), u32(1), u32(2), u32(0), u8(0), u8(0))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(11), u32(1), u32(6), u32(0), str("a"), u8(0), u8(0))));
+        assertCorrupt(() -> JsonBinary.decode(cat(good, u8(0))));
+        assertCorrupt(() -> JsonBinary.decode(hex("0200")));
+        assertCorrupt(() -> JsonBinary.decode(hex("010C")));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(10), u32(1), u32(1), u32(1), u8(0))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(10), u32(1), u32(2), u32(0), u8(0), u8(0))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(11), u32(1), u32(6), u32(0), str("a"), u8(0), u8(0))));
         byte[] unsorted = cat(u8(1), u8(11), u32(2), u32(12), u32(0), u32(6), str("b"), u8(0), str("a"), u8(0));
-        assertMisuse(() -> JsonBinary.decode(unsorted));
+        assertCorrupt(() -> JsonBinary.decode(unsorted));
         byte[] stray = cat(u8(1), u8(11), u32(1), u32(6), u32(1), str("a"), u8(0));
-        assertMisuse(() -> JsonBinary.decode(stray));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(8), u32(1), hex("FF"))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(8), u32(5), hex("41"))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(10), u32(-1), u32(0))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(6), i128(BigInteger.ONE), u32(Integer.MIN_VALUE))));
-        assertMisuse(() -> JsonBinary.decode(cat(u8(1), u8(6), i128(BigInteger.ONE), u32(7000))));
+        assertCorrupt(() -> JsonBinary.decode(stray));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(8), u32(1), hex("FF"))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(8), u32(5), hex("41"))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(10), u32(-1), u32(0))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(6), i128(BigInteger.ONE), u32(Integer.MIN_VALUE))));
+        assertCorrupt(() -> JsonBinary.decode(cat(u8(1), u8(6), i128(BigInteger.ONE), u32(7000))));
     }
 
     /**
@@ -209,7 +210,7 @@ class JsonBinaryTest {
         assertBeyond(() -> JsonText.of(deeper));
         byte[] tooDeep =
                 cat(u8(1), u8(10), u32(1), u32(doc.length - 1), u32(0), Arrays.copyOfRange(doc, 1, doc.length));
-        assertMisuse(() -> JsonBinary.decode(tooDeep));
+        assertCorrupt(() -> JsonBinary.decode(tooDeep));
     }
 
     /**
@@ -240,7 +241,7 @@ class JsonBinaryTest {
                 try {
                     JsonBinary.decode(flipped);
                 } catch (TurborelException refused) {
-                    assertEquals(Failures.MISUSE_SQLCODE, refused.sqlcode());
+                    assertEquals(Failures.CORRUPT_SQLCODE, refused.sqlcode());
                 }
             }
         }

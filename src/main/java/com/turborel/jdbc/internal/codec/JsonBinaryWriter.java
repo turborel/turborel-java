@@ -35,7 +35,7 @@ public final class JsonBinaryWriter {
      * @return its stored form
      * @throws TurborelException if arrays and objects nest deeper than {@link
      *     JsonBinary#MAX_NESTING} or the document passes 256 MiB (SQLCODE -900), or a scalar is of
-     *     no SQL/JSON scalar's kind or past its field (SQLCODE -910)
+     *     no SQL/JSON scalar's kind (SQLCODE -910), or past its field (SQLCODE -301)
      */
     public static byte[] encode(JsonItem item) throws TurborelException {
         return encode(item, MAX_DOCUMENT_OCTETS);

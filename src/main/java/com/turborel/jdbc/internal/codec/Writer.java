@@ -16,8 +16,9 @@ import java.util.List;
  * ([PROTOCOL Values and fields]).
  *
  * <p>A value the program gave that a field cannot hold, such as a number past a {@code u32} or a
- * string that is not Unicode, is refused with a {@link TurborelException} (SQLCODE -910), never
- * cut short or replaced, so what reaches the server is what the program gave.
+ * string that is not Unicode, is refused with a {@link TurborelException} (SQLCODE -301, SQLSTATE
+ * 22003 or 22021), never cut short or replaced, so what reaches the server is what the program
+ * gave.
  */
 public final class Writer {
     /** The bytes a body starts with room for. */
@@ -69,7 +70,7 @@ public final class Writer {
      */
     public Writer u8(int value) throws TurborelException {
         if (value < 0 || value > U8_MAX) {
-            throw Failures.misuse(Cite.FIELDS + " " + value + " is past a u8");
+            throw Failures.outOfRange(Cite.FIELDS + " " + value + " is past a u8");
         }
         ensure(1);
         buffer[size++] = (byte) value;
@@ -85,7 +86,7 @@ public final class Writer {
      */
     public Writer u32(long value) throws TurborelException {
         if (value < 0 || value > U32_MAX) {
-            throw Failures.misuse(Cite.FIELDS + " " + value + " is past a u32");
+            throw Failures.outOfRange(Cite.FIELDS + " " + value + " is past a u32");
         }
         return bits32((int) value);
     }
@@ -130,7 +131,7 @@ public final class Writer {
      */
     public Writer i128(BigInteger value) throws TurborelException {
         if (value.compareTo(I128_MIN) < 0 || value.compareTo(I128_MAX) > 0) {
-            throw Failures.misuse(Cite.FIELDS + " " + value + " is past an i128");
+            throw Failures.outOfRange(Cite.FIELDS + " " + value + " is past an i128");
         }
         byte[] big = value.toByteArray();
         byte fill = value.signum() < 0 ? ALL_ONES : 0;
@@ -246,7 +247,7 @@ public final class Writer {
             encoded.get(out);
             return out;
         } catch (CharacterCodingException e) {
-            throw Failures.misuse(Cite.FIELDS + " a string is not Unicode: it holds a lone surrogate");
+            throw Failures.notInRepertoire(Cite.FIELDS + " a string is not Unicode: it holds a lone surrogate");
         }
     }
 

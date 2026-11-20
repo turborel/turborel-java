@@ -1,7 +1,9 @@
 package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
-import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
+import static com.turborel.jdbc.internal.codec.Fixture.assertCorrupt;
+import static com.turborel.jdbc.internal.codec.Fixture.assertNotInRepertoire;
+import static com.turborel.jdbc.internal.codec.Fixture.assertOutOfRange;
 import static com.turborel.jdbc.internal.codec.Fixture.bytes;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.decoded;
@@ -81,7 +83,7 @@ class ConstructedValueTest {
         assertEquals(blob, decoded(cat(u8(20), u8(1), bytes(hex("FF00")))));
         assertBroken(() -> decoded(cat(u8(20), u8(0), bytes(hex("FF00")))));
         assertBroken(() -> decoded(cat(u8(20), u8(2), bytes(hex("00")))));
-        assertMisuse(() -> Lob.Whole.ofText("\uDC00"));
+        assertNotInRepertoire(() -> Lob.Whole.ofText("\uDC00"));
         assertEquals(0, LobKind.CHARACTER.code());
     }
 
@@ -95,7 +97,7 @@ class ConstructedValueTest {
         byte[] bytes = cat(u8(21), u8(0), u32(-1), u64(5_000_000_000L), u64(-1));
         assertArrayEquals(bytes, encoded(locator));
         assertEquals(locator, decoded(bytes));
-        assertMisuse(() -> encoded(new Lob.Locator(LobKind.BINARY, -1, 0, 0)));
+        assertOutOfRange(() -> encoded(new Lob.Locator(LobKind.BINARY, -1, 0, 0)));
     }
 
     /**
@@ -164,7 +166,7 @@ class ConstructedValueTest {
         assertEquals("Json[0102]", json.toString());
         assertNotEquals(json, ONE);
         assertBroken(() -> decoded(cat(u8(25), bytes(hex("0202")))));
-        assertMisuse(() -> OctetValue.Json.ofStored(hex("01")));
+        assertCorrupt(() -> OctetValue.Json.ofStored(hex("01")));
     }
 
     /**

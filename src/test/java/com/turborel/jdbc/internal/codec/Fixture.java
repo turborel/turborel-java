@@ -82,6 +82,25 @@ final class Fixture {
     }
 
     /** Asserts a program's misuse, SQLCODE -910 and SQLSTATE TB910. */
+    static TurborelException assertOutOfRange(Executable call) {
+        return assertCodes(call, Failures.DATA_SQLCODE, Failures.NUMERIC_VALUE_OUT_OF_RANGE);
+    }
+
+    static TurborelException assertNotInRepertoire(Executable call) {
+        return assertCodes(call, Failures.DATA_SQLCODE, Failures.CHARACTER_NOT_IN_REPERTOIRE);
+    }
+
+    static TurborelException assertCorrupt(Executable call) {
+        return assertCodes(call, Failures.CORRUPT_SQLCODE, Failures.CORRUPT_SQLSTATE);
+    }
+
+    private static TurborelException assertCodes(Executable call, int sqlcode, String sqlstate) {
+        TurborelException failure = assertThrows(TurborelException.class, call);
+        assertEquals(sqlcode, failure.sqlcode(), failure.getMessage());
+        assertEquals(sqlstate, failure.getSQLState(), failure.getMessage());
+        return failure;
+    }
+
     static TurborelException assertMisuse(Executable call) {
         TurborelException failure = assertThrows(TurborelException.class, call);
         assertEquals(Failures.MISUSE_SQLCODE, failure.sqlcode(), failure.getMessage());

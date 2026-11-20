@@ -3,6 +3,7 @@ package com.turborel.jdbc.internal.codec;
 import static com.turborel.jdbc.internal.codec.Fixture.assertBeyond;
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
 import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
+import static com.turborel.jdbc.internal.codec.Fixture.assertOutOfRange;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.decoded;
 import static com.turborel.jdbc.internal.codec.Fixture.encoded;
@@ -54,8 +55,8 @@ class ValueCodecTest {
         }
         assertEquals(new BigDecimal(Writer.I128_MAX, 2), new Value.Exact(Writer.I128_MAX, 2).toBigDecimal());
         assertBeyond(() -> new Value.Exact(BigInteger.ONE, Integer.MAX_VALUE + 1L).toBigDecimal());
-        assertMisuse(() -> encoded(new Value.Exact(Writer.I128_MAX.add(BigInteger.ONE), 0)));
-        assertMisuse(() -> encoded(new Value.Exact(BigInteger.ONE, -1)));
+        assertOutOfRange(() -> encoded(new Value.Exact(Writer.I128_MAX.add(BigInteger.ONE), 0)));
+        assertOutOfRange(() -> encoded(new Value.Exact(BigInteger.ONE, -1)));
     }
 
     /**
@@ -111,7 +112,7 @@ class ValueCodecTest {
             assertEquals("22009", refused.getSQLState());
             assertEquals(-301, refused.sqlcode());
         }
-        assertMisuse(() -> encoded(new Value.Datetime(Value.Moment.DATE, false, 256, (short) 0, 0)));
+        assertOutOfRange(() -> encoded(new Value.Datetime(Value.Moment.DATE, false, 256, (short) 0, 0)));
     }
 
     /**
@@ -169,10 +170,10 @@ class ValueCodecTest {
         assertBroken(() -> decoded(cat(u8(15), i128(BigInteger.TEN.pow(34).add(BigInteger.ONE)), u32(0))));
         assertBroken(() -> decoded(cat(u8(15), i128(BigInteger.ONE), u32(6145))));
         assertBroken(() -> decoded(cat(u8(15), i128(BigInteger.ONE), u32(-6144))));
-        assertMisuse(() ->
+        assertOutOfRange(() ->
                 Value.Decfloat.of(new BigDecimal(max.multiply(BigInteger.TEN).add(BigInteger.ONE))));
-        assertMisuse(() -> Value.Decfloat.of(new BigDecimal("1E+6145")));
-        assertMisuse(() -> Value.Decfloat.of(new BigDecimal("1E-6144")));
+        assertOutOfRange(() -> Value.Decfloat.of(new BigDecimal("1E+6145")));
+        assertOutOfRange(() -> Value.Decfloat.of(new BigDecimal("1E-6144")));
     }
 
     /**
