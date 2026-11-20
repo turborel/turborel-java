@@ -292,6 +292,26 @@ public final class Connection implements AutoCloseable {
         return number;
     }
 
+    /** How many statements the session prepared since it began or a pool last reset it: the next one's number. */
+    long prepared() {
+        return nextStatement;
+    }
+
+    /** Every statement the session prepared gone with it, as a pool's reset leaves it. */
+    void statementsGone() {
+        nextStatement = 0;
+    }
+
+    /**
+     * A pipeline of requests on this connection, empty, {@link Pipeline.OnError#CONTINUE}
+     * ([CLIENT Pipelines]).
+     *
+     * @return the pipeline
+     */
+    public Pipeline pipeline() {
+        return new Pipeline(this);
+    }
+
     /** Marks a copy begun, or ended: while one is under way, only its rows, its end and a ping are sent. */
     void copying(boolean underWay) {
         copying = underWay;
@@ -458,18 +478,32 @@ public final class Connection implements AutoCloseable {
      *     or as it is written
      */
     void send(Request request) throws TurborelException {
+        writable(request instanceof Request.CopyData
+                || request instanceof Request.CopyEnd
+                || request instanceof Request.Ping);
+        put(request.encode());
+    }
+
+    /** Writes a pipeline's window of requests at once ([PROTOCOL Requests]), refused as a request of no copy is. */
+    void writeEncoded(byte[] frames) throws TurborelException {
+        writable(false);
+        put(frames);
+    }
+
+    /** Refuses a request on a connection lost, or, while a copy is under way, one not of the copy. */
+    private void writable(boolean ofCopy) throws TurborelException {
         TurborelException was = lost;
         if (was != null) {
             throw was;
         }
-        if (copying
-                && !(request instanceof Request.CopyData
-                        || request instanceof Request.CopyEnd
-                        || request instanceof Request.Ping)) {
+        if (copying && !ofCopy) {
             throw Failures.misuse("[PROTOCOL CopyIn 'I'] a copy is under way: until it ends, only its rows, its end "
                     + "and a ping are sent");
         }
-        byte[] frames = request.encode();
+    }
+
+    /** Writes frames, the connection lost if they cannot be. */
+    private void put(byte[] frames) throws TurborelException {
         try {
             wire.write(frames, told.compress());
         } catch (TurborelException failure) {

@@ -1,6 +1,7 @@
 package com.turborel.jdbc.internal.session;
 
 import com.turborel.jdbc.TurborelException;
+import com.turborel.jdbc.internal.codec.Attribute;
 import com.turborel.jdbc.internal.codec.Column;
 import com.turborel.jdbc.internal.codec.Completed;
 import com.turborel.jdbc.internal.codec.Reply;
@@ -35,6 +36,11 @@ public final class Statements {
      */
     public Outcome query(String sql) throws TurborelException {
         connection.send(queryRequest(sql, false));
+        return queryReply();
+    }
+
+    /** The outcome of a Query sent: a query's rows, all of them, or another statement's completion. */
+    Outcome queryReply() throws TurborelException {
         Reply first = connection.receive();
         if (first instanceof Reply.Complete complete) {
             return new Outcome.Done(complete.completed());
@@ -120,8 +126,19 @@ public final class Statements {
      */
     public Outcome execute(Statement statement, List<Value> values) throws TurborelException {
         boolean ends = connection.autocommit();
-        connection.send(new Request.Execute(
-                statement.number(), values, 0, ends, connection.told().attributes(), 0));
+        connection.send(
+                executeRequest(statement, values, ends, connection.told().attributes()));
+        return executeReply(statement);
+    }
+
+    /** An Execute of {@code statement} with {@code values}, all its rows, the transaction ended with it if {@code ends}. */
+    static Request.Execute executeRequest(
+            Statement statement, List<Value> values, boolean ends, List<Attribute> attributes) {
+        return new Request.Execute(statement.number(), values, 0, ends, attributes, 0);
+    }
+
+    /** The outcome of an Execute of {@code statement} sent: its rows, all of them, or its completion. */
+    Outcome executeReply(Statement statement) throws TurborelException {
         if (statement.columns().isEmpty()) {
             return new Outcome.Done(completion());
         }

@@ -61,4 +61,19 @@
     <Class name="com.turborel.jdbc.internal.settings.Settings"/>
     <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
+  <!-- A pipeline's failed outcome holds the failure, the program's to
+       read; its queued executions hold the values they copied; a pooled
+       connection hands out the connection it lends: that is what each is
+       for. -->
+  <Match>
+    <Or>
+      <Class name="com.turborel.jdbc.internal.session.Pipeline$Piped$Failed"/>
+      <Class name="com.turborel.jdbc.internal.session.Pipeline$Queued$Execute"/>
+      <Class name="com.turborel.jdbc.internal.session.Pooled"/>
+    </Or>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
 </FindBugsFilter>

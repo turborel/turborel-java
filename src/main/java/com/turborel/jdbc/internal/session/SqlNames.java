@@ -113,6 +113,21 @@ final class SqlNames {
         return heading;
     }
 
+    /**
+     * The {@code <authorization identifier>} {@code text} is, if it is one alone, as Turborel's
+     * lexer reads one: a regular identifier in upper case, or a delimited one's body.
+     *
+     * @param text the text
+     * @return the identifier, or none
+     */
+    static @Nullable String authorizationIdentifier(String text) {
+        List<Token> tokens = lex(text);
+        if (tokens == null || tokens.size() != 1 || tokens.get(0).kind() != Kind.IDENTIFIER) {
+            return null;
+        }
+        return tokens.get(0).text();
+    }
+
     /** The tokens of a text; none if it holds what the lexer refuses. */
     private static @Nullable List<Token> lex(String text) {
         List<Token> tokens = new ArrayList<>();
