@@ -82,6 +82,18 @@ public sealed interface OctetValue extends Value {
         }
 
         /**
+         * The JSON value a JSON text is, parsed as Turborel parses it, two members of one key
+         * allowed ({@link JsonParse}).
+         *
+         * @param text the JSON text
+         * @return the value
+         * @throws TurborelException as {@link JsonParse#parse}, or {@link #of}
+         */
+        public static Json ofText(String text) throws TurborelException {
+            return of(JsonParse.parse(text, JsonParse.Keys.ANY));
+        }
+
+        /**
          * Its stored form.
          *
          * @return a copy of it
