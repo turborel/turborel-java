@@ -44,6 +44,10 @@ done in the milestone that names them.
 
 ## M3 Statements
 
+- JSON text parsed to the stored form of Turborel's RULES.md D89, as
+  Turborel's own parse rules read it (`src/json/parse_fn.rs`), so a JSON
+  parameter may be bound as text as well as an item, beyond P-VAL-25,
+  which reads and writes items.
 - Queries and prepared statements: P-REQ-2, P-QUERY-2 to P-QUERY-6,
   P-EXEC-2 to P-EXEC-4, the P-PREP, P-FETCH, P-CLOSE, P-DEALLOC and
   P-DESC rows, the C-RUN rows but C-RUN-6, and the C-PREP rows.
