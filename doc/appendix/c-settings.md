@@ -39,4 +39,16 @@ case; another is refused (SQLSTATE 08001).
 
 ## Pool settings
 
-A pool's settings come with milestone M6.
+A pool's settings are the components of `PoolConfig`, each set by its
+`with` method over `PoolConfig.defaults()`
+([Pools](../client/28-pools.md)).
+
+| `PoolConfig` | turborel-client | What it says | Default |
+|---|---|---|---|
+| `max` | `max` | The most connections made at once, handed out and idle | 10 |
+| `maxIdle` | `max_idle` | The most kept idle | 10 |
+| `idleTimeout` | `idle_timeout` | How long one may stay idle; none, as long as it lives | 10 minutes |
+| `maxLifetime` | `max_lifetime` | How long one lives from when it was made; none, without limit | 1 hour |
+| `maxWait` | `wait` | How long `get` waits for one to come back | 30 seconds |
+| `check` | `check` | Whether an idle connection is checked to answer before it is handed out | yes |
+| `reset` | `reset` | Statements run as each comes back, after the pool's own | none |
