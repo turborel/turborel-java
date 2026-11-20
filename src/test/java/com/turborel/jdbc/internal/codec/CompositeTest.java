@@ -1,7 +1,6 @@
 package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
-import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.reader;
 import static com.turborel.jdbc.internal.codec.Fixture.str;
@@ -109,7 +108,7 @@ class CompositeTest {
     /**
      * Verifies: [PROTOCOL The tail] tag 1, attributes: a count, then each name and value; written
      * only where there are any, at most 32, a name of 1 to 64 bytes, a value of at most 1024, more
-     * refused before it is sent.
+     * refused before it is sent with the connection failure the server gives.
      */
     @Test
     void attributesAreBounded() throws TurborelException {
@@ -126,9 +125,9 @@ class CompositeTest {
         Attribute.write(new Writer(), most);
         List<Attribute> more = new ArrayList<>(most);
         more.add(new Attribute("n", "v"));
-        assertMisuse(() -> Attribute.write(new Writer(), more));
-        assertMisuse(() -> Attribute.write(new Writer(), List.of(new Attribute("", "v"))));
-        assertMisuse(() -> Attribute.write(new Writer(), List.of(new Attribute("n".repeat(65), "v"))));
-        assertMisuse(() -> Attribute.write(new Writer(), List.of(new Attribute("n", "v".repeat(1025)))));
+        assertBroken(() -> Attribute.write(new Writer(), more));
+        assertBroken(() -> Attribute.write(new Writer(), List.of(new Attribute("", "v"))));
+        assertBroken(() -> Attribute.write(new Writer(), List.of(new Attribute("n".repeat(65), "v"))));
+        assertBroken(() -> Attribute.write(new Writer(), List.of(new Attribute("n", "v".repeat(1025)))));
     }
 }

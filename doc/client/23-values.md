@@ -42,7 +42,8 @@ statements that give them with M3.
 | SQLSTATE | SQLCODE | When |
 |---|---|---|
 | 08006 | -919 | A value or a type received is malformed: a tag of none, a body cut short, a flag neither 0 nor 1, a string not UTF-8, a JSON value damaged, parts nested too deep. The connection fails. |
-| TB910 | -910 | A value given cannot be carried: a number past its field, a string that is not Unicode, a DECFLOAT of more than 34 digits, a displacement past -12:59 to +14:00. Nothing is sent. |
+| TB910 | -910 | A value given cannot be carried: a number past its field, a string that is not Unicode, a DECFLOAT of more than 34 digits. Nothing is sent. |
+| 22009 | -301 | A displacement given past -12:59 to +14:00, refused before it is sent with the code Turborel gives it. |
 | 0A000 | -900 | A JSON item nests deeper than 128, or its stored form passes 256 MiB. |
 | 22032 | -301 | A JSON item with no JSON text, as a datetime or an approximate number not finite, asked for its text. |
 

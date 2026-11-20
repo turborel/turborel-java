@@ -144,7 +144,11 @@ public sealed interface Value
         @Override
         public void encode(Writer w) throws TurborelException {
             if (displacement < MIN_DISPLACEMENT || displacement > MAX_DISPLACEMENT) {
-                throw Failures.misuse(
+                // Refused with the code Turborel gives the same displacement, so a program sees
+                // one behaviour whether the driver or the server refuses it.
+                throw new TurborelException(
+                        Failures.DATA_SQLCODE,
+                        Failures.INVALID_TIME_ZONE_DISPLACEMENT,
                         Cite.VALUES + " a displacement of " + displacement + " minutes is past -12:59 to +14:00");
             }
             w.u8(moment.tag()).flag(zoned).u8(precision);

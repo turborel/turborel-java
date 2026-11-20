@@ -20,6 +20,12 @@ public final class Failures {
     /** The SQLSTATE of what is past turborel's limits: feature not supported, 0A000. */
     public static final String BEYOND_SQLSTATE = "0A000";
 
+    /** The SQLCODE of a data exception, Turborel's -301. */
+    public static final int DATA_SQLCODE = -301;
+
+    /** The SQLSTATE of a time zone displacement out of range: 22009. */
+    public static final String INVALID_TIME_ZONE_DISPLACEMENT = "22009";
+
     private Failures() {}
 
     /**

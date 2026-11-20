@@ -22,18 +22,20 @@ public record Attribute(String name, String value) {
 
     /**
      * Writes tag 1 and the attributes, unless there are none, refusing more than the server takes
-     * before anything is sent, since the server fails the connection over them.
+     * before anything is sent. The server fails the connection over them, so they are refused
+     * with its code, SQLCODE -919 and SQLSTATE 08006, and a program sees one behaviour either way.
      *
      * @param w where they are written
      * @param attributes the attributes
-     * @throws TurborelException if there are more than 32, or a name or a value is out of bounds
+     * @throws TurborelException a connection failure if there are more than 32, or a name or a
+     *     value is out of bounds
      */
     static void write(Writer w, List<Attribute> attributes) throws TurborelException {
         if (attributes.isEmpty()) {
             return;
         }
         if (attributes.size() > MAX_ATTRIBUTES) {
-            throw Failures.misuse(Cite.TAIL + " " + attributes.size() + " attributes are more than the "
+            throw Broken.connection(Cite.TAIL + " " + attributes.size() + " attributes are more than the "
                     + MAX_ATTRIBUTES + " a message takes");
         }
         w.u8(Tail.ATTRIBUTES).bits32(attributes.size());
@@ -41,7 +43,7 @@ public record Attribute(String name, String value) {
             byte[] name = Writer.utf8(each.name);
             byte[] value = Writer.utf8(each.value);
             if (name.length == 0 || name.length > MAX_NAME || value.length > MAX_VALUE) {
-                throw Failures.misuse(Cite.TAIL + " an attribute's name is 1 to " + MAX_NAME
+                throw Broken.connection(Cite.TAIL + " an attribute's name is 1 to " + MAX_NAME
                         + " bytes and its value at most " + MAX_VALUE);
             }
             w.bytes(name).bytes(value);
