@@ -45,6 +45,7 @@
       <Class name="com.turborel.jdbc.internal.session.Outcome$Rows"/>
       <Class name="com.turborel.jdbc.internal.session.Ran"/>
       <Class name="com.turborel.jdbc.internal.session.Connection"/>
+      <Class name="com.turborel.jdbc.internal.session.Import$Cause"/>
     </Or>
     <Or>
       <Bug pattern="EI_EXPOSE_REP"/>

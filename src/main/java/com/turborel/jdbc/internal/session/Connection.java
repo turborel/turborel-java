@@ -6,6 +6,7 @@ import com.turborel.jdbc.internal.auth.TlsChannel;
 import com.turborel.jdbc.internal.codec.Broken;
 import com.turborel.jdbc.internal.codec.CancelKey;
 import com.turborel.jdbc.internal.codec.Completed;
+import com.turborel.jdbc.internal.codec.Failures;
 import com.turborel.jdbc.internal.codec.FrameHeader;
 import com.turborel.jdbc.internal.codec.Reply;
 import com.turborel.jdbc.internal.codec.ReplyCodec;
@@ -50,10 +51,13 @@ public final class Connection implements AutoCloseable {
     private String server = "";
     private boolean active;
     private boolean autocommit;
+    private boolean copying;
     private @Nullable String warning;
     private long nextStatement;
     private final Statements statements = new Statements(this);
     private final Controls controls = new Controls(this, statements);
+    private final Lobs lobs = new Lobs(this);
+    private final Bulk bulk = new Bulk(this);
 
     private Connection(Duplex duplex, boolean bounded, Timeouts timeouts) {
         this.wire = new Wire(duplex);
@@ -255,6 +259,24 @@ public final class Connection implements AutoCloseable {
     }
 
     /**
+     * What reads, writes, frees and holds the connection's large objects.
+     *
+     * @return its large objects
+     */
+    public Lobs lobs() {
+        return lobs;
+    }
+
+    /**
+     * What copies, exports and imports rows over the connection.
+     *
+     * @return its bulk transfers
+     */
+    public Bulk bulk() {
+        return bulk;
+    }
+
+    /**
      * What the server has told the connection beside its replies ([CLIENT What the server tells]).
      *
      * @return what it told
@@ -268,6 +290,11 @@ public final class Connection implements AutoCloseable {
         long number = nextStatement;
         nextStatement = (nextStatement + 1) & U32_MASK;
         return number;
+    }
+
+    /** Marks a copy begun, or ended: while one is under way, only its rows, its end and a ping are sent. */
+    void copying(boolean underWay) {
+        copying = underWay;
     }
 
     /** The connection's frames, for a request the low-level client has no method of, as a copy's. */
@@ -434,6 +461,13 @@ public final class Connection implements AutoCloseable {
         TurborelException was = lost;
         if (was != null) {
             throw was;
+        }
+        if (copying
+                && !(request instanceof Request.CopyData
+                        || request instanceof Request.CopyEnd
+                        || request instanceof Request.Ping)) {
+            throw Failures.misuse("[PROTOCOL CopyIn 'I'] a copy is under way: until it ends, only its rows, its end "
+                    + "and a ping are sent");
         }
         byte[] frames = request.encode();
         try {
