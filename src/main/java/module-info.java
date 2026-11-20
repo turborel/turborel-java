@@ -6,7 +6,8 @@
  * package {@code com.turborel.jdbc} (RULES.md D2). The protocol's codec and the client beneath
  * the JDBC classes live in packages this module does not export.
  *
- * <p>The module is in alpha, version 0.0.0: no class connects to a server yet.
+ * <p>The module is in alpha, version 0.0.0: the client beneath connects and logs in to a server,
+ * and the JDBC classes come at milestone M7 (RULES.md D2).
  */
 module com.turborel.jdbc {
     requires transitive java.sql;
