@@ -30,8 +30,8 @@ environment and service and password files, several servers, pipelines
 and pools.
 
 The driver is built in milestones, M0 to M8. Its low-level client
-connects and logs in to a server; statements come with M3, and the JDBC
-classes with M7. [CONFORMANCE.md](CONFORMANCE.md) shows what is done,
+connects, runs and prepares statements and controls its session; large
+objects and bulk copy come with M4, and the JDBC classes with M7. [CONFORMANCE.md](CONFORMANCE.md) shows what is done,
 row by row, and [TODO.md](TODO.md) what is open.
 
 ## Requirements

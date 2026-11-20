@@ -4,9 +4,9 @@
 
 ## NAME
 
-`Connect`, `Connection`, the mechanisms, `TlsConfig`, `Timeouts`,
-`Offer`, `KeyCache`, `Canceller`: the low-level client's connections,
-as turborel-client gives them
+`Connect`, `Connection`, `Controls`, the mechanisms, `TlsConfig`,
+`Timeouts`, `Offer`, `KeyCache`, `Canceller`: the low-level client's
+connections, as turborel-client gives them
 
 ## SYNOPSIS
 
@@ -41,9 +41,18 @@ public final class Connection implements AutoCloseable {
     public void setMaxBody(int bytes);
     public @Nullable Target target();
     public @Nullable Canceller canceller();
+    public Statements statements();
+    public Controls controls();
+    public Told told();
     public void terminate() throws TurborelException;
     public boolean isLost();
     public void close();
+}
+
+public final class Controls {
+    public void ping() throws TurborelException;
+    public void reset() throws TurborelException;
+    public void changeUser(String user, Mechanism mechanism) throws TurborelException;
 }
 
 public final class Canceller {
@@ -111,7 +120,10 @@ public record Timeouts(@Nullable Duration connect, @Nullable Duration read) {
 
 These packages are not exported by the module (RULES.md D2): JDBC's
 classes rest on them, and from milestone M7 a program reaches what JDBC
-has no place for by `unwrap`. Ping, reset and change-user come at M3.
+has no place for by `unwrap`. A connection's `statements()` are told in
+[Statements and Cursors](22-statements.md), with what `told()` gives of
+a completion, and `controls()` several statements in one request and
+query attributes too.
 
 ## DESCRIPTION
 
@@ -168,6 +180,16 @@ the password under a random secret of the cache's own; it holds
 when a login that used it fails. `lookups` gives its hits and misses, in
 that order.
 
+**Controlling the session.** Granted `ping`, `ping` asks whether the
+server and the connection are alive, with no statement run. Granted
+`reset`, `reset` puts the session back as it was at login: its
+transaction rolled back, told by notice 01T01, its prepared statements,
+cursors, temporary tables and settings gone, every setting told again,
+its user and cancel key kept. Granted `change-user`, `changeUser`
+authenticates the connection again as another user, answering each
+challenge as a login does, the session renewed as by a reset under a
+new cancel key, no transaction active after it.
+
 **Ending.** `terminate` sends Terminate and waits for the server to
 close, at most the read timeout, else `TERMINATE_WITHIN`; the server
 ends the session as SESSION.COMMIT_AT_END says. `close` closes at once.
@@ -184,6 +206,8 @@ more, `isLost` saying so.
 | -919 | 08004 | The server refuses the connection, as of a version it does not speak |
 | -919 | 08006 | The server cannot be reached; TLS's handshake fails; a wait runs out, the message saying the server did not answer in time; the server does not prove it knows the SCRAM verifier; a reply is longer than the connection takes; a file of certificates or a key cannot be read; the stream fails; `setReadTimeout` on a connection the program opened itself |
 | -920 | TB920 | The statement a `Canceller` cancelled |
+| -919 | 08006 | `ping`, `reset` or `changeUser` of a capability not granted, refused before anything is sent, the connection kept |
+| -919 | 28000 | `changeUser`: the server refuses the user or the credentials, and the connection fails |
 | -913 | 40002 | `terminate`: the commit at the session's end fails, and the transaction is rolled back |
 
 ## EXAMPLES
@@ -220,11 +244,12 @@ more: refusals, a certificate, timeouts and an offer, and the key cache.
 
 [PROTOCOL The Native Protocol], [PROTOCOL Opening a connection],
 [PROTOCOL Mechanisms], [PROTOCOL Capabilities], [PROTOCOL Status 'T'],
-[PROTOCOL Cancel 'Z'], [PROTOCOL Terminate 'X'];
+[PROTOCOL Cancel 'Z'], [PROTOCOL Terminate 'X'], [PROTOCOL Ping 'G'],
+[PROTOCOL Reset 'W'], [PROTOCOL ChangeUser 'U'];
 [CLIENT Connecting], [CLIENT Timeouts],
 [CLIENT What a connection asks for],
 [CLIENT What the server tells], [CLIENT Running statements],
-[CLIENT The SCRAM key cache].
+[CLIENT The SCRAM key cache], [CLIENT Controlling the session].
 
 ## SEE ALSO
 
