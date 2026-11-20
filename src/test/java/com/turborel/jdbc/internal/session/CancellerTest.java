@@ -62,7 +62,6 @@ class CancellerTest {
                     assertThrows(TurborelException.class, () -> canceller.cancelWithin(Duration.ofMillis(200)));
             assertEquals("08006", late.getSQLState());
             assertTrue(Duration.ofNanos(System.nanoTime() - began).compareTo(Duration.ofSeconds(5)) < 0);
-            server.accept().close();
         }
         InetSocketAddress nobody;
         try (ServerSocket closed = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
