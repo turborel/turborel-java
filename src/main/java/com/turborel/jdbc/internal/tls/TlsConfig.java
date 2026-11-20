@@ -2,17 +2,21 @@ package com.turborel.jdbc.internal.tls;
 
 import com.turborel.jdbc.TurborelException;
 import com.turborel.jdbc.internal.codec.Broken;
+import java.net.Socket;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedTrustManager;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -78,10 +82,26 @@ public final class TlsConfig {
      * @throws TurborelException a connection failure if the JDK cannot make it
      */
     public static TlsConfig of(KeyStore trusted, @Nullable Identity identity) throws TurborelException {
+        return of(trusted, identity, true);
+    }
+
+    /**
+     * A TLS that trusts the authorities of a store, presents an identity if one is given, and
+     * checks the server's name if asked: {@code verify-full} checks it, {@code verify-ca} not
+     * ([CLIENT TLS by mode]).
+     *
+     * @param trusted the authorities trusted
+     * @param identity the client's certificate chain and key, or none
+     * @param checkName whether the server's certificate is checked to be of its name
+     * @return the configuration
+     * @throws TurborelException a connection failure if the JDK cannot make it
+     */
+    public static TlsConfig of(KeyStore trusted, @Nullable Identity identity, boolean checkName)
+            throws TurborelException {
         try {
             TrustManagerFactory trust = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             trust.init(trusted);
-            return of(trust.getTrustManagers(), identity, true);
+            return of(trust.getTrustManagers(), identity, checkName);
         } catch (GeneralSecurityException e) {
             throw Broken.connection("[CLIENT Connecting] cannot make TLS: " + e.getMessage());
         }
@@ -104,6 +124,59 @@ public final class TlsConfig {
             return new TlsConfig(context, checkName);
         } catch (GeneralSecurityException e) {
             throw Broken.connection("[CLIENT Connecting] cannot make TLS: " + e.getMessage());
+        }
+    }
+
+    /**
+     * The TLS of {@code prefer} and {@code require} ([CLIENT TLS by mode]): any certificate the
+     * server presents taken, the handshake's signatures still checked against its key, so it keeps
+     * out an eavesdropper and not a server in the middle; an identity presented if one is given.
+     *
+     * @param identity the client's certificate chain and key, or none
+     * @return the configuration
+     * @throws TurborelException a connection failure if the JDK cannot make it
+     */
+    public static TlsConfig unchecked(@Nullable Identity identity) throws TurborelException {
+        return of(new TrustManager[] {new Unchecked()}, identity, false);
+    }
+
+    /** Takes any certificate a server presents; a client's it never sees. */
+    static final class Unchecked extends X509ExtendedTrustManager {
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) {
+            // Taken unchecked, as prefer and require ask.
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) {
+            // Taken unchecked, as prefer and require ask.
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) {
+            // Taken unchecked, as prefer and require ask.
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            throw new CertificateException("a client's TLS checks no client");
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
+                throws CertificateException {
+            throw new CertificateException("a client's TLS checks no client");
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+                throws CertificateException {
+            throw new CertificateException("a client's TLS checks no client");
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
         }
     }
 

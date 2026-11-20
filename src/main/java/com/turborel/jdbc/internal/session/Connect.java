@@ -110,6 +110,32 @@ public final class Connect {
     }
 
     /**
+     * Logs in over a stream already opened to a target, as connection settings do once they have
+     * reached a server ([CLIENT Connecting by settings]).
+     *
+     * @param target where the stream reaches
+     * @param opened the stream, and over TLS what its handshake gave
+     * @param login the user, and what proves it
+     * @param timeouts how long it waits
+     * @param offer what it asks for
+     * @return the connection
+     * @throws TurborelException SQLSTATE 28000, before anything is sent, for a secret mechanism
+     *     over plain TCP, the stream closed; the server's refusal; a connection failure
+     */
+    public static Connection over(Target target, Opened opened, Login login, Timeouts timeouts, Offer offer)
+            throws TurborelException {
+        if (target.plainTcp()) {
+            try {
+                refuseInTheClear(login.mechanism());
+            } catch (TurborelException refused) {
+                opened.duplex().close();
+                throw refused;
+            }
+        }
+        return Connection.openTimed(opened, login, timeouts, offer, target);
+    }
+
+    /**
      * Refuses a secret mechanism over plain TCP, before a connection is made, as the server refuses
      * it: SQLSTATE 28000.
      *

@@ -27,11 +27,13 @@
   </Match>
   <!-- The tests name /tmp for Unix sockets, whose paths must be shorter
        than SUN_LEN, which macOS's temporary directory is not, and the
-       name of a Windows named pipe, refused off Windows. -->
+       name of a Windows named pipe, refused off Windows; the settings'
+       tests read paths as settings' text, never opening them. -->
   <Match>
     <Or>
       <Class name="com.turborel.jdbc.internal.transport.TransportTest"/>
       <Class name="com.turborel.jdbc.testing.LiveServer"/>
+      <Class name="com.turborel.jdbc.internal.settings.SettingsTest"/>
     </Or>
     <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
   </Match>
@@ -51,5 +53,12 @@
       <Bug pattern="EI_EXPOSE_REP"/>
       <Bug pattern="EI_EXPOSE_REP2"/>
     </Or>
+  </Match>
+  <!-- Settings hand out their SCRAM key cache, shared by every
+       connection they make, so a reconnection skips the derivation:
+       that is what it is for. -->
+  <Match>
+    <Class name="com.turborel.jdbc.internal.settings.Settings"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
 </FindBugsFilter>

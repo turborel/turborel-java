@@ -341,4 +341,35 @@ class TlsTest {
             third.join();
         }
     }
+
+    /**
+     * Verifies: [CLIENT TLS by mode] the TLS of {@code prefer} and {@code require} takes any
+     * certificate a server presents, checking no name, and checks no client; the TLS of {@code
+     * verify-ca} checks no name.
+     */
+    @Test
+    void preferAndRequireTakeAnyServersCertificate() throws GeneralSecurityException, IOException, TurborelException {
+        TlsConfig.Unchecked unchecked = new TlsConfig.Unchecked();
+        java.security.cert.X509Certificate[] none = new java.security.cert.X509Certificate[0];
+        javax.net.ssl.SSLEngine engine = javax.net.ssl.SSLContext.getDefault().createSSLEngine();
+        try (java.net.Socket socket = new java.net.Socket()) {
+            unchecked.checkServerTrusted(none, "RSA");
+            unchecked.checkServerTrusted(none, "RSA", socket);
+            unchecked.checkServerTrusted(none, "RSA", engine);
+            assertThrows(
+                    java.security.cert.CertificateException.class, () -> unchecked.checkClientTrusted(none, "RSA"));
+            assertThrows(
+                    java.security.cert.CertificateException.class,
+                    () -> unchecked.checkClientTrusted(none, "RSA", socket));
+            assertThrows(
+                    java.security.cert.CertificateException.class,
+                    () -> unchecked.checkClientTrusted(none, "RSA", engine));
+        }
+        assertEquals(0, unchecked.getAcceptedIssuers().length);
+        assertFalse(TlsConfig.unchecked(null).checksName());
+        KeyStore empty = KeyStore.getInstance(KeyStore.getDefaultType());
+        empty.load(null, new char[0]);
+        assertFalse(TlsConfig.of(empty, null, false).checksName());
+        assertTrue(TlsConfig.of(empty, null).checksName());
+    }
 }
