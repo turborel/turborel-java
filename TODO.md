@@ -25,8 +25,9 @@ done in the milestone that names them.
 
 ## M2 Connect
 
-Nothing is open. Every row M2 named is done but P-STATUS-2, the Statuses
-after Reset and ChangeUser, which M3 takes with them.
+Nothing is open. Every row M2 named is done but P-STATUS-2 and
+P-STATUS-11, which cover the Statuses after Reset and ChangeUser too,
+and which M3 takes with them.
 
 ## M3 Statements
 
@@ -34,13 +35,18 @@ after Reset and ChangeUser, which M3 takes with them.
   Turborel's own parse rules read it (`src/json/parse_fn.rs`), so a JSON
   parameter may be bound as text as well as an item, beyond P-VAL-25,
   which reads and writes items.
+- The driver's own failures checked against the table every Turborel
+  driver shares, turborel-client's code kept wherever it has the case,
+  as a capability not granted (08006); each code the driver raises
+  itself recorded in Appendix B.
 - Queries and prepared statements: P-REQ-2, P-QUERY-2 to P-QUERY-6,
-  P-EXEC-2 to P-EXEC-4, the P-PREP, P-FETCH, P-CLOSE, P-DEALLOC and
-  P-DESC rows, the C-RUN rows but C-RUN-6, and the C-PREP rows.
+  P-EXEC-2 to P-EXEC-5, P-PREPD-2, the P-PREP, P-FETCH, P-CLOSE,
+  P-DEALLOC and P-DESC rows, the C-RUN rows but C-RUN-6, and the C-PREP
+  rows.
 - Completions, failures, notices and conditions: P-COMPL-2 to
   P-COMPL-6, the P-ERRN rows but P-ERRN-6, and C-TOLD-2 to C-TOLD-9.
-- The session: P-PING-1, P-STATUS-2, the P-RESET and P-CHUSER rows, and
-  the C-CTRL rows.
+- The session: P-PING-1, P-STATUS-2, P-STATUS-11, the P-RESET and
+  P-CHUSER rows, and the C-CTRL rows.
 - Capabilities: P-CAP-1, P-CAP-3 to P-CAP-9, P-CAP-11, P-CAP-13 and
   P-CAP-15 to P-CAP-18.
 - XML and UUID values: the C-XML and C-UUID rows.

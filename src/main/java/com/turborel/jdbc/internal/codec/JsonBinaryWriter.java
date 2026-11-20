@@ -38,10 +38,22 @@ public final class JsonBinaryWriter {
      *     no SQL/JSON scalar's kind or past its field (SQLCODE -910)
      */
     public static byte[] encode(JsonItem item) throws TurborelException {
+        return encode(item, MAX_DOCUMENT_OCTETS);
+    }
+
+    /**
+     * As {@link #encode(JsonItem)}, a document of at most {@code most} octets.
+     *
+     * @param item the item
+     * @param most the most octets the document may hold
+     * @return its stored form
+     * @throws TurborelException as {@link #encode(JsonItem)}, the document past {@code most}
+     */
+    static byte[] encode(JsonItem item, int most) throws TurborelException {
         Writer w = new Writer().u8(JsonBinary.FORMAT_VERSION);
         w.raw(node(item, 0));
         byte[] out = w.toByteArray();
-        if (out.length > MAX_DOCUMENT_OCTETS) {
+        if (out.length > most) {
             throw Failures.beyond(Cite.VALUES + " a JSON value's stored form is longer than 256 MiB");
         }
         return out;

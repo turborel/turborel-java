@@ -77,6 +77,42 @@ class JsonBinaryTest {
     }
 
     /**
+     * Verifies: [PROTOCOL JSON values] the page's examples, byte for byte: {"a":[1,"x"]} is 51
+     * octets; in {"b":1,"a":2} the members stay in that order and the directory puts a first; a
+     * decimal keeps the scale it was written with, 1.50 units 150 and scale 2, in JSON text too.
+     */
+    @Test
+    void theExamplesOfThePage() throws TurborelException {
+        JsonItem nested = new JsonItem.ObjectItem(List.of(
+                new JsonItem.Member("a", new JsonItem.ArrayItem(List.of(exact(1, 0), scalar(new Value.Text("x")))))));
+        byte[] page = hex("01" + "0B" + "01000000" + "25000000" + "00000000" + "0100000061" + "0A" + "02000000"
+                + "0F000000" + "00000000" + "09000000" + "03" + "0100000000000000" + "08" + "0100000078");
+        assertEquals(51, page.length);
+        assertArrayEquals(page, JsonBinaryWriter.encode(nested));
+        assertEquals(nested, JsonBinary.decode(page));
+        JsonItem ordered = new JsonItem.ObjectItem(
+                List.of(new JsonItem.Member("b", exact(1, 0)), new JsonItem.Member("a", exact(2, 0))));
+        byte[] written = JsonBinaryWriter.encode(ordered);
+        assertArrayEquals(hex("0E000000" + "00000000"), java.util.Arrays.copyOfRange(written, 10, 18));
+        assertEquals(ordered, JsonBinary.decode(written));
+        assertEquals("{\"b\":1,\"a\":2}", JsonText.of(ordered));
+        assertArrayEquals(cat(u8(1), u8(4), u64(150), u8(2)), JsonBinaryWriter.encode(exact(150, 2)));
+        assertEquals("1.50", JsonText.of(exact(150, 2)));
+    }
+
+    /**
+     * Verifies: [PROTOCOL JSON values] a document is at most 256 MiB: one longer is refused as
+     * beyond the driver's limits (SQLCODE -900, SQLSTATE 0A000), here at a limit of a few octets.
+     */
+    @Test
+    void aDocumentIsBounded() throws TurborelException {
+        assertEquals(1 << 28, JsonBinaryWriter.MAX_DOCUMENT_OCTETS);
+        JsonItem string = scalar(new Value.Text("twelve chars"));
+        assertEquals(18, JsonBinaryWriter.encode(string, 18).length);
+        assertBeyond(() -> JsonBinaryWriter.encode(string, 17));
+    }
+
+    /**
      * Verifies: [PROTOCOL Values] node 9, a datetime: moment, the instant in UTC i64, the zone's
      * minutes i16, zoned and precision.
      */

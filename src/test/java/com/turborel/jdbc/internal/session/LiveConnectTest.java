@@ -278,6 +278,61 @@ class LiveConnectTest {
         }
     }
 
+    /**
+     * Verifies: [PROTOCOL Status 'T'] at login, before Ready, one Status of each name in the page's
+     * table, in its order, then the session's own settings; after a statement that changed
+     * nothing, no Status before its completion (the second statement's: the server at b40bd830
+     * tells the first statement's again).
+     */
+    @Test
+    void theStatusesComeInTheTablesOrder() throws TurborelException, IOException {
+        LiveServer.get();
+        Opened opened = new Target.Tcp(ADDRESS).opened(Timeouts.CONNECT_WITHIN);
+        try {
+            Wire wire = new Wire(opened.duplex());
+            wire.send(
+                    new com.turborel.jdbc.internal.codec.Request.Hello(
+                            "ann",
+                            "trust",
+                            com.turborel.jdbc.internal.codec.Octets.EMPTY,
+                            Offer.standard().capabilities(),
+                            List.of()),
+                    null);
+            List<String> names = new java.util.ArrayList<>();
+            java.util.Map<String, String> values = new java.util.HashMap<>();
+            com.turborel.jdbc.internal.codec.Reply reply =
+                    wire.receive(com.turborel.jdbc.internal.codec.FrameHeader.MAX_BODY, false);
+            while (reply instanceof com.turborel.jdbc.internal.codec.Reply.Status status) {
+                names.add(status.name());
+                values.put(status.name(), status.value());
+                reply = wire.receive(com.turborel.jdbc.internal.codec.FrameHeader.MAX_BODY, false);
+            }
+            assertTrue(reply instanceof com.turborel.jdbc.internal.codec.Reply.Ready, reply.toString());
+            List<String> table = List.of(
+                    "SERVER_VERSION", "AUTHORIZATION", "SCHEMA", "READ_ONLY", "SERVER_READ_ONLY", "CATALOG", "OWNER");
+            assertEquals(table, names.subList(0, table.size()));
+            List<String> own = names.subList(table.size(), names.size());
+            assertTrue(own.contains("SESSION.TIME_ZONE") && own.contains("TRANSACTION.ISOLATION"), own.toString());
+            assertEquals("TURBOREL", values.get("CATALOG"), "CATALOG.NAME, of its default");
+            for (int statement = 1; statement <= 2; statement++) {
+                wire.send(new com.turborel.jdbc.internal.codec.Request.Query("VALUES 1", true, List.of(), false), null);
+                List<String> again = new java.util.ArrayList<>();
+                reply = wire.receive(com.turborel.jdbc.internal.codec.FrameHeader.MAX_BODY, false);
+                while (!(reply instanceof com.turborel.jdbc.internal.codec.Reply.Complete)) {
+                    if (reply instanceof com.turborel.jdbc.internal.codec.Reply.Status status) {
+                        again.add(status.name());
+                    }
+                    reply = wire.receive(com.turborel.jdbc.internal.codec.FrameHeader.MAX_BODY, false);
+                }
+                if (statement == 2) {
+                    assertEquals(List.of(), again, "a statement that changed nothing");
+                }
+            }
+        } finally {
+            opened.duplex().close();
+        }
+    }
+
     /** A mechanism the server does not serve. */
     private static final class Unknown implements com.turborel.jdbc.internal.auth.Mechanism {
         @Override

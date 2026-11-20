@@ -449,11 +449,6 @@ rule here, the rule is kept:
 - `gradlew.bat` keeps CRLF line endings, since cmd.exe misreads a batch
   file's labels in LF lines; every other file is LF (R-PLAT-3).
 - A test's private helpers need no Javadoc comment of their own.
-- The driver behaves as turborel-client does, except where that code
-  contradicts what turborel's documents say outright; there the
-  documents are kept. After ChangeUser no transaction is active, since
-  ChangeUser renews the session as Reset does, though turborel-client
-  keeps its flag; and an import sends a long CLOB field by a locator.
 
 ### This driver's own
 
