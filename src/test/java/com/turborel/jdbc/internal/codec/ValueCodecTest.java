@@ -2,7 +2,6 @@ package com.turborel.jdbc.internal.codec;
 
 import static com.turborel.jdbc.internal.codec.Fixture.assertBeyond;
 import static com.turborel.jdbc.internal.codec.Fixture.assertBroken;
-import static com.turborel.jdbc.internal.codec.Fixture.assertMisuse;
 import static com.turborel.jdbc.internal.codec.Fixture.assertOutOfRange;
 import static com.turborel.jdbc.internal.codec.Fixture.cat;
 import static com.turborel.jdbc.internal.codec.Fixture.decoded;
