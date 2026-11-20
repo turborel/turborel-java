@@ -281,8 +281,7 @@ class LiveConnectTest {
     /**
      * Verifies: [PROTOCOL Status 'T'] at login, before Ready, one Status of each name in the page's
      * table, in its order, then the session's own settings; after a statement that changed
-     * nothing, no Status before its completion (the second statement's: the server at b40bd830
-     * tells the first statement's again).
+     * nothing, the first after login too, no Status before its completion.
      */
     @Test
     void theStatusesComeInTheTablesOrder() throws TurborelException, IOException {
@@ -324,9 +323,7 @@ class LiveConnectTest {
                     }
                     reply = wire.receive(com.turborel.jdbc.internal.codec.FrameHeader.MAX_BODY, false);
                 }
-                if (statement == 2) {
-                    assertEquals(List.of(), again, "a statement that changed nothing");
-                }
+                assertEquals(List.of(), again, "statement " + statement + " changed nothing");
             }
         } finally {
             opened.duplex().close();
