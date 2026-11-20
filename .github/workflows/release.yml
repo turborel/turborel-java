@@ -1,7 +1,7 @@
 # Builds and checks a release, and keeps what would be published as the
 # run's artifact. It publishes nothing: its last step is written but
 # disabled until the owner publishes every turborel driver together
-# (VERSIONING.md, RULES.md R-PROC-5). Run by hand alone.
+# (VERSIONING.md, RULES.md D5, R-PROC-7). Run by hand alone.
 name: release
 
 on:
@@ -41,16 +41,21 @@ jobs:
           name: staging-deploy
           path: build/staging-deploy/
       # Disabled: the owner enables this step, by removing its `if`, when the
-      # drivers are published, and first gives the repository the three
-      # secrets it names. It signs the staged files and uploads them to the
-      # Sonatype Central Portal, to be released there by hand.
-      - name: Sign and upload to Maven Central
+      # drivers are published, gives the job `contents: write` so it can push
+      # the tag, and first gives the repository the three secrets it names.
+      # It tags the release `v` and its number, signs the staged files, and
+      # uploads them to the Sonatype Central Portal, to be released there by
+      # hand (VERSIONING.md).
+      - name: Tag, sign and upload to Maven Central
         if: ${{ false }}
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.MAVEN_SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
           CENTRAL_PORTAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
         run: |
+          version="$(./gradlew -q properties --property version | sed -n 's/^version: //p')"
+          git tag "v${version}"
+          git push origin "v${version}"
           ./gradlew publishMavenPublicationToStagingRepository --rerun-tasks \
             "-Dorg.gradle.java.installations.paths=${{ steps.jdk17.outputs.path }},${{ steps.jdk21.outputs.path }}"
           (cd build/staging-deploy && zip -r ../central-bundle.zip com -x '*maven-metadata.xml*')

@@ -1,46 +1,69 @@
 # The turborel-java Documentation Set
 
-turborel-java is the Java driver for turborel, a relational database
-system. Its JDBC 4.3 driver, `turborel-jdbc`, connects a Java program, or
-a tool written in Java such as DBeaver or DataGrip, to a turborel server,
-`turboreld`, over turborel's native protocol, in Java alone. This set of
-manuals describes it for those who connect programs and tools to turborel
-with it.
+turborel-java is the Java driver for Turborel, a relational database
+system. It connects a Java program to a Turborel server,
+`turboreld`, over Turborel's native protocol, version 1, which it speaks
+itself, in Java alone, with no native code and no library beyond the JDK. Its standard interface is JDBC 4.3, as the JPMS module `com.turborel.jdbc`, over a
+low-level client built to do all that Turborel's own client library
+does. This set of manuals describes it for those who write programs with
+it. The SQL a program sends, and the server, are described in Turborel's
+own manuals,
+[The Turborel Documentation Set](https://github.com/turborel/turborel/blob/main/doc/README.md).
 
-The driver is in alpha: what these manuals describe may change in any
-release until 1.0.0 ([Versions](appendix/d-versions.md)). Its version is
-the turborel release it is made for. Each change updates the pages it
-touches, so the manuals describe the release they come with. A chapter not
-yet written says what it will cover, and the milestone that writes it.
+turborel-java is in alpha: what these manuals describe may change in any
+release until 1.0.0 ([Versions](appendix/d-versions.md)). The driver is
+built in milestones, and until a chapter's milestone lands, the chapter
+says what it will cover. Each change updates the pages it touches, so
+the manuals describe the release they come with.
 
 ## The volumes
 
 | Volume | For | |
 |---|---|---|
-| [I. User's Guide](user/README.md) | Anyone who connects a Java program or tool to turborel | Installing, connecting, queries, prepared statements, transactions, large objects, copying, pipelines and pools, settings, errors, chapter by chapter |
-| [II. API Reference](client/README.md) | Programmers, looking something up | The JDBC API as the driver implements it, and its own interfaces beyond JDBC, a page each |
-| [Appendices](appendix/README.md) | Everyone | Types, errors, settings, versions |
+| [I. User's Guide](user/README.md) | Anyone who writes a Java program against Turborel | Installing, connecting, queries, prepared statements, transactions, large objects, copying, pipelines and pools, settings and errors, chapter by chapter |
+| [II. API Reference](client/README.md) | The same, looking something up | The standard API, then the low-level client, a page for each main interface or module |
+| [Appendices](appendix/README.md) | Everyone | Types, errors, settings and versions |
 
-Read the User's Guide from the start to learn the driver; turn to the API
-Reference and the appendices to look a thing up.
+Read the User's Guide from the start to learn the driver; turn to the
+API Reference and the appendices to look a thing up.
 
 ## Conventions
 
-**Code** is set in a fixed-width font. Java examples are complete enough to
-compile, and each is run against a turborel server before it is printed
-here, its output pasted from the run.
+**Examples** of Java and of SQL are set in a fixed-width font.
+SQL key words are in upper case, names in upper case unless delimited,
+as the standard folds them, and a dynamic parameter is `?`:
 
-**SQL** in examples is written as turborel's manual writes it: key words
-and names in upper case, as the standard folds them.
+```sql
+SELECT NAME, SALARY FROM STAFF WHERE SALARY > ?
+```
 
-**Results** follow their examples, as the program prints them.
+**Results** of examples follow them, as the program prints them.
 
-**Failures** are given by SQLSTATE, the code the SQL standard defines,
-and SQLCODE, the older number turborel gives beside it. The driver reports
-both on every failure, the SQLCODE as the `SQLException`'s vendor code
-([Appendix B](appendix/b-errors.md)).
+**Citations** name the section of Turborel's documents a behaviour comes
+from: [PROTOCOL Frames] is the section "Frames" of
+[The Native Protocol](https://github.com/turborel/turborel/blob/main/doc/client/05-protocol.md);
+[CLIENT Pipelines] is the section "Pipelines" of Turborel's client
+library chapters,
+[The Client Library](https://github.com/turborel/turborel/blob/main/doc/client/02-library.md)
+and
+[Settings, Pipelines and Pools](https://github.com/turborel/turborel/blob/main/doc/client/02-library-connections.md).
+The rows each page fulfils are those of the driver's parity matrix,
+[CONFORMANCE.md](https://github.com/turborel/turborel-java/blob/main/CONFORMANCE.md).
 
-**Citations** name the section of turborel's documents a behaviour comes
-from, by its heading: [PROTOCOL Frames] is the section "Frames" of
-turborel's *The Native Protocol*; [CLIENT Pipelines] is the section
-"Pipelines" of its client library's chapters.
+**Errors** are given by SQLSTATE, the code the SQL standard defines, and
+SQLCODE, the older number, as Turborel gives them;
+[Appendix B](appendix/b-errors.md) maps them to the driver's error.
+
+### Pages of reference
+
+A page of the API Reference has these sections, in this order:
+
+- **NAME**: the interface, class, module or function, and what it does
+  in a line.
+- **SYNOPSIS**: its declaration, in Java.
+- **DESCRIPTION**: what it does.
+- **ERRORS**: each way it fails, by SQLSTATE.
+- **EXAMPLES**: programs, and what they print.
+- **STANDARD**: the sections of Turborel's documents it follows, and,
+  for the standard API, the specification of the interface.
+- **SEE ALSO**: related pages.

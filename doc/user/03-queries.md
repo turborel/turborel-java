@@ -2,8 +2,8 @@
 
 [Contents](README.md)
 
-This chapter will tell how a program runs SQL and reads its results:
-`Statement`, `ResultSet`, results streamed a batch at a time, several
-statements in one call, and what the server tells after each statement.
-M3 builds the statements beneath it, and the chapter is written in M7,
-when its examples run through JDBC.
+This chapter will tell how a program runs a statement and reads its
+rows, a batch at a time as they come, with the columns' types and the
+values the driver gives for each, and what a statement's completion
+tells: the rows it changed, the values it generated, the server's time.
+It is filled at milestone M3.

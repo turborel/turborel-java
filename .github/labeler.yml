@@ -53,11 +53,11 @@ area/doc:
 
 area/ci:
   - changed-files:
-      - any-glob-to-any-file: [".github/**", ".githooks/**"]
+      - any-glob-to-any-file: [".github/**"]
 
 area/build:
   - changed-files:
-      - any-glob-to-any-file: ["build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/**", "gradlew", "gradlew.bat", "config/**"]
+      - any-glob-to-any-file: ["build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/**", "gradlew", "gradlew.bat", "config/**", "buildSrc/**", ".githooks/**", ".gitattributes", ".gitignore"]
 
 dependencies:
   - changed-files:

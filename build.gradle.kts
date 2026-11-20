@@ -50,7 +50,7 @@ val errorProneToolsPath = configurations.resolvable("errorProneToolsPath") {
 }
 
 dependencies {
-    // Annotations alone, read as the code compiles; `requires static` in module-info (RULES.md D5).
+    // Annotations alone, read as the code compiles; `requires static` in module-info (RULES.md D10).
     compileOnly(libs.jspecify)
     testCompileOnly(libs.jspecify)
 
@@ -78,7 +78,7 @@ tasks.compileJava {
 }
 
 // The JDK the analysis tools run on. Error Prone and Checkstyle run only on
-// JDK 21 or later (RULES.md D4).
+// JDK 21 or later (RULES.md D10).
 val toolsJava = 21
 
 // Error Prone compiles the sources a second time, on the tools' JDK, for
@@ -130,6 +130,11 @@ tasks.test {
 }
 
 spotless {
+    kotlin {
+        target("buildSrc/src/**/*.kt")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
     java {
         palantirJavaFormat(libs.versions.palantir.java.format.get())
         removeUnusedImports()
@@ -137,7 +142,7 @@ spotless {
         endWithNewline()
     }
     kotlinGradle {
-        target("*.gradle.kts")
+        target("*.gradle.kts", "buildSrc/*.gradle.kts")
         trimTrailingWhitespace()
         endWithNewline()
     }
@@ -188,45 +193,28 @@ tasks.jacocoTestCoverageVerification {
     }
 }
 
-// Every test cites what it verifies (RULES.md R-TRACE-1): its doc comment
-// begins `Verifies:` and a tag, `[PROTOCOL <heading>]`, `[CLIENT <heading>]`
-// or `[DESIGN] D<n>`.
-abstract class Traceability : DefaultTask() {
-    @get:InputFiles
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val sources: ConfigurableFileCollection
-
-    @get:OutputFile
-    abstract val stamp: RegularFileProperty
-
-    @TaskAction
-    fun verify() {
-        val test = Regex("""@(Test|ParameterizedTest|RepeatedTest)\b""")
-        val margin = Regex("""\n\s*\*(?!/)""")
-        val tag = Regex("""^/\*\*\s*Verifies: \[(PROTOCOL [^\]]+\]|CLIENT [^\]]+\]|DESIGN\] D\d+)""")
-        val uncited = sources.files.sorted().flatMap { file ->
-            val text = file.readText()
-            test.findAll(text).map { it.range.first }.filterNot { at ->
-                // The doc comment just before the test's annotations, with no
-                // statement or block between them, begins with a citation.
-                val before = text.substring(0, at)
-                val start = before.lastIndexOf("/**")
-                val end = before.lastIndexOf("*/")
-                start >= 0 && end > start && before.substring(end).none { it == ';' || it == '}' } &&
-                    tag.containsMatchIn(before.substring(start, end).replace(margin, " "))
-            }.map { at -> "${file.name}:${text.substring(0, at).count { it == '\n' } + 1}" }.toList()
-        }
-        if (uncited.isNotEmpty()) {
-            throw GradleException("tests with no `Verifies:` citation (RULES.md R-TRACE-1): $uncited")
-        }
-        stamp.get().asFile.writeText("ok\n")
-    }
-}
-
-val traceability = tasks.register<Traceability>("traceability") {
+// The checks tool's own checks (RULES.md D4, D6): every test cites what it
+// verifies, every citation names what is there, and the manual keeps the
+// layout the docs site reads (buildSrc/).
+val traceability = tasks.register<TraceabilityTask>("traceability") {
     group = "verification"
-    description = "Checks that every test cites what it verifies (RULES.md R-TRACE-1)."
-    sources.from(fileTree("src/test/java") { include("**/*.java") })
+    description = "Checks citations and the manual's layout (RULES.md R-TRACE-1, R-TRACE-2, R-DOC-7)."
+    tests.from(fileTree("src/test/java") { include("**/*.java") })
+    cited.from(
+        fileTree("src") { include("**/*.java") },
+        fileTree("buildSrc/src") { include("**/*.kt") },
+        fileTree("config") { include("**/*.xml") },
+        fileTree(".github") { include("**/*.yml", "**/*.md") },
+        fileTree("doc") { include("**/*.md") },
+        files("build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/libs.versions.toml"),
+        files(".githooks/pre-commit"),
+        fileTree(".") { include("*.md") },
+    )
+    documents.from(fileTree(".") { include("*.md") }, fileTree(".github") { include("**/*.md") })
+    manual = layout.projectDirectory.dir("doc")
+    root = layout.projectDirectory
+    headings = layout.projectDirectory.file("config/headings.txt")
+    rules = layout.projectDirectory.file("RULES.md")
     stamp = layout.buildDirectory.file("traceability/ok")
 }
 
@@ -235,7 +223,7 @@ tasks.check {
 }
 
 tasks.withType<Jar>().configureEach {
-    // The license travels inside every jar (RULES.md D6).
+    // The license travels inside every jar (RULES.md D11).
     from(layout.projectDirectory.file("LICENSE")) {
         into("META-INF")
     }

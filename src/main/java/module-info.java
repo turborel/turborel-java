@@ -10,7 +10,7 @@
  */
 module com.turborel.jdbc {
     requires transitive java.sql;
-    // Nullness annotations, read as the code compiles and absent at run time (RULES.md D5).
+    // Nullness annotations, read as the code compiles and absent at run time (RULES.md D10).
     requires static org.jspecify;
 
     exports com.turborel.jdbc;

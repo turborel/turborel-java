@@ -1,6 +1,6 @@
 # Versioning
 
-How turborel-java's releases are numbered, what protocol each speaks, and
+How turborel-java's releases are numbered, which protocol each speaks, and
 how a release is published.
 
 [Release numbers](#release-numbers) · [Alpha](#alpha) ·
@@ -11,60 +11,70 @@ how a release is published.
 
 ## Release numbers
 
-The driver has no version scheme of its own. Its version is the turborel
-release it is made for, the same number as the server's: a turborel
-release and each driver's release share the number, and turborel-jdbc
-0.0.0 is made for turborel 0.0.0. turborel numbers its releases
-**MAJOR.MINOR.PATCH**, as in
-[Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html), and says
-what each kind of release may change in its own `VERSIONING.md`.
+The driver has no version scheme of its own (RULES.md D5). Its version
+is the number of the Turborel release it is made for, the same number as
+the server's: a Turborel release and each driver's release for it share
+it, **MAJOR.MINOR.PATCH**, as Turborel's
+[VERSIONING.md](https://github.com/turborel/turborel/blob/main/VERSIONING.md)
+numbers them, after
+[Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). What a
+release may change follows from its number there, for the driver as for
+the server.
+
+A driver of a release works with a server of the same release. A fix of
+the driver alone, between Turborel's releases, waits for the next
+release's number.
 
 ## Alpha
 
-turborel is in alpha, version **0.0.0**, and so is the driver. While the
-version is 0.y.z nothing is promised: the protocol, the driver's API and
-its behaviour may change in any build. The first stable release is
-**1.0.0**, with turborel's.
+Turborel is in alpha, version **0.0.0**, until its first release, and so
+is turborel-java. While the version is 0.y.z nothing is promised: the
+driver's API, its behaviour and the protocol it speaks may change in any
+build. The first stable release is **1.0.0**, with Turborel's.
 
 ## The protocol
 
-| Release | Protocol version | Defined in |
-|---|---|---|
-| 0.0.0 (alpha) | 1 | turborel's `doc/client/05-protocol.md` |
+The alpha speaks the native protocol's version 1, the only version. It
+grows by capabilities, never by a new version: the driver asks for the
+capabilities it implements, and the server grants those it has, so a
+driver and a server of different builds agree on what both have. The
+driver sends version 1 in its Hello, and a server that does not speak it
+refuses the connection (SQLSTATE 08004).
 
-Version 1 grows by capabilities, never by a new version: the driver asks
-for those it knows, and the server grants those it has, so a driver and a
-server of different builds agree on what both have. A server refuses a
-Hello of a version it does not speak (SQLSTATE 08004).
+| Driver | Turborel | Protocol |
+|---|---|---|
+| 0.0.0 (alpha) | 0.0.0 (alpha) | 1 |
 
 ## Where the version is
 
-- `build.gradle.kts` gives the version, `0.0.0`, and the Maven coordinates,
-  `com.turborel:turborel-jdbc` (RULES.md D6).
-- The jar's POM carries the same version.
+- `build.gradle.kts`'s `version` holds the number, written once. Everything else
+  that carries it, the package's metadata and what the library tells a
+  program, takes it from there or is held to it by a test.
+- A release is tagged `v` and its number, as `v0.0.0`. turborel.com's
+  documentation site reads the manual, `doc/`, from `main` while there
+  is no release, and at each release's tag once there are.
 
 ## Publishing
 
-Nothing is published until every turborel driver is done. Then the owner
-publishes them together, each to its language's registry. turborel-jdbc
-goes to [Maven Central](https://central.sonatype.com), through the Sonatype
-Central Portal, under the namespace `com.turborel`, which a DNS record on
-turborel.com verifies.
+Nothing is published to Maven Central, and no release is tagged, until
+every Turborel driver is done. Then the owner publishes them together,
+each to its language's registry. Until then, build from source, as
+[README.md](README.md) says.
 
-A release is published from a clean checkout of a pushed commit that has
-passed `./gradlew check` on every platform in CI, by the `release`
-workflow, run by hand:
+A release is published by the owner alone, from a clean checkout of a
+pushed commit that has passed `./gradlew check` and
+`./gradlew jacocoTestCoverageVerification` in CI on every platform:
 
-1. `./gradlew check publishMavenPublicationToStagingRepository` builds the
-   jar, its sources and Javadoc jars and the POM, checks them, and writes
-   them to `build/staging-deploy`, as a Maven repository in a directory.
-   Nothing leaves the machine.
-2. The workflow keeps that directory as the run's artifact, to be looked
-   over.
-3. Its last step signs the files and uploads them to the Central Portal.
-   It is written but disabled: the owner enables it, and gives the
-   workflow the signing key and the Portal's token as secrets, when the
-   drivers are published.
+1. Set the release's number in `build.gradle.kts`'s `version`, in a commit of its
+   own.
+2. Run the workflow **release** by hand, on that commit. It builds the
+   package and checks it, and keeps what it built as the run's
+   artifacts. It publishes nothing.
+3. The workflow's last step, which tags the release and publishes it, is
+   written but disabled until the owner enables it and gives it what the
+   registry needs to accept the release. Every package carries
+   `LICENSE`.
 
-A version published to Maven Central cannot be changed or deleted. A fix is
-a new release.
+A version published to a registry can be withdrawn from new installs at
+most, never published again with other contents. A fix is a new
+release.

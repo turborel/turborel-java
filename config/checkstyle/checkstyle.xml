@@ -5,7 +5,7 @@
 <!--
   The code rules a tool can check (RULES.md §3). Formatting is Spotless's
   (R-STYLE-1); these are the rules beyond it. A change of a threshold
-  changes RULES.md in the same commit (R-PROC-3).
+  changes RULES.md in the same commit (R-PROC-4).
 -->
 <module name="Checker">
   <property name="charset" value="UTF-8"/>
@@ -78,7 +78,7 @@
     <module name="Regexp">
       <property name="format" value="System\.(exit|out|err)\b|\.printStackTrace\(|Runtime\.getRuntime\(\)\.(exit|halt)"/>
       <property name="illegalPattern" value="true"/>
-      <property name="message" value="No exits or printing in library code (R-ERR-1, R-STYLE-4)."/>
+      <property name="message" value="No exits or printing in library code (R-ERR-1, R-STYLE-3)."/>
     </module>
     <module name="EmptyCatchBlock"/>
     <module name="IllegalCatch"/>
@@ -88,13 +88,22 @@
     <module name="BooleanExpressionComplexity">
       <property name="max" value="3"/>
     </module>
+
+    <!-- R-SIZE-5: complexity at most 15, blocks nested at most 5 deep. A
+         switch counts once: it chooses by one tag among the protocol's. -->
     <module name="CyclomaticComplexity">
-      <property name="max" value="10"/>
+      <property name="max" value="15"/>
+      <property name="switchBlockAsSingleDecisionPoint" value="true"/>
     </module>
     <module name="NestedIfDepth">
-      <property name="max" value="3"/>
+      <property name="max" value="4"/>
     </module>
-    <module name="NestedTryDepth"/>
+    <module name="NestedForDepth">
+      <property name="max" value="4"/>
+    </module>
+    <module name="NestedTryDepth">
+      <property name="max" value="4"/>
+    </module>
 
     <!-- R-STYLE: idiom. -->
     <module name="AvoidStarImport"/>

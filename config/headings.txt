@@ -1,0 +1,76 @@
+# The headings of Turborel's documents a citation may name (RULES.md D6,
+# R-TRACE-2), copied from Turborel's main at e4f08f77, as printed: PROTOCOL
+# for doc/client/05-protocol.md, CLIENT for doc/client/02-library.md and
+# doc/client/02-library-connections.md. A change of commit changes
+# CONFORMANCE.md's in the same commit.
+PROTOCOL The Native Protocol
+PROTOCOL Frames
+PROTOCOL Compressed frames
+PROTOCOL Values and fields
+PROTOCOL Data types
+PROTOCOL Values
+PROTOCOL Composite fields
+PROTOCOL The tail
+PROTOCOL Opening a connection
+PROTOCOL Mechanisms
+PROTOCOL Capabilities
+PROTOCOL Requests
+PROTOCOL Hello 'H'
+PROTOCOL Answer 'A'
+PROTOCOL Query 'Q'
+PROTOCOL Prepare 'P'
+PROTOCOL Execute 'E'
+PROTOCOL Fetch 'F'
+PROTOCOL Close 'C'
+PROTOCOL Deallocate 'D'
+PROTOCOL Lob 'L'
+PROTOCOL Cancel 'Z'
+PROTOCOL Terminate 'X'
+PROTOCOL Describe 'Y'
+PROTOCOL Ping 'G'
+PROTOCOL Reset 'W'
+PROTOCOL ChangeUser 'U'
+PROTOCOL CopyIn 'I'
+PROTOCOL CopyData 'J'
+PROTOCOL CopyEnd 'N'
+PROTOCOL Replies
+PROTOCOL Challenge 'C'
+PROTOCOL Ready 'R'
+PROTOCOL Prepared 'P'
+PROTOCOL Description 'D'
+PROTOCOL Rows 'B'
+PROTOCOL Suspended 'S'
+PROTOCOL Complete 'K'
+PROTOCOL Error 'E'
+PROTOCOL Lob 'L'
+PROTOCOL Notice 'N'
+PROTOCOL Status 'T'
+PROTOCOL Pong 'G'
+PROTOCOL Conversations
+PROTOCOL Errors and notices
+PROTOCOL A worked example
+CLIENT The Client Library
+CLIENT Connecting
+CLIENT Timeouts
+CLIENT Running statements
+CLIENT Prepared statements
+CLIENT Large objects
+CLIENT XML values
+CLIENT UUIDs
+CLIENT Importing
+CLIENT What a connection asks for
+CLIENT What the server tells
+CLIENT Controlling the session
+CLIENT Copying and exporting
+CLIENT The SQL-agent
+CLIENT Settings, Pipelines and Pools
+CLIENT Connecting by settings
+CLIENT Where settings come from
+CLIENT The connection URI
+CLIENT The service file
+CLIENT The password file
+CLIENT Several servers
+CLIENT TLS by mode
+CLIENT Pipelines
+CLIENT Pools
+CLIENT The SCRAM key cache

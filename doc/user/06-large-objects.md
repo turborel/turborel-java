@@ -2,7 +2,7 @@
 
 [Contents](README.md)
 
-This chapter will tell how a program reads and writes CLOB and BLOB
-values: a value small enough comes whole, a longer one by a locator read
-a chunk at a time, and a long value is written piece by piece. M4 builds
-them, and the chapter is written in M7, with JDBC's `Blob` and `Clob`.
+This chapter will tell how a program reads a CLOB or BLOB, whole or by
+its locator, a range or a stream at a time, and writes one a piece at a
+time to pass as a parameter; and how long a locator lasts, freed or
+held. It is filled at milestone M4.

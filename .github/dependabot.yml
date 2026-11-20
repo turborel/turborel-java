@@ -1,5 +1,5 @@
-# Updates of the build's tools and of the workflows' actions (RULES.md D5,
-# R-DEP). Each is proposed once it is two weeks old, as its own pull
+# Updates of the build's tools and of the workflows' actions (RULES.md D4,
+# R-DEP-3). Each is proposed once it is two weeks old, as its own pull
 # request, its commit in CONTRIBUTING.md's form.
 version: 2
 updates:

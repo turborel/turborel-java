@@ -1,7 +1,7 @@
 # Every check a change must pass (RULES.md R-PROC-1), on each platform the
 # driver runs on (R-PLAT-1) and each Java release it supports (D3), plus the
 # coverage floor (R-COV-1). JDK 17 compiles the library, JDK 21 runs Error
-# Prone and Checkstyle (D4), and the matrix's JDK runs the tests.
+# Prone and Checkstyle (D10), and the matrix's JDK runs the tests.
 name: verify
 
 # A pull request is checked once, through pull_request, and main again once

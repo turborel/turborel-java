@@ -2,7 +2,7 @@
 
 [Contents](README.md)
 
-This chapter will tell how a program sends many requests in one round
-trip by a pipeline, and shares a bounded set of connections among its
-threads by a pool, and how the SQL-agent's CONNECT, SET CONNECTION and
-DISCONNECT are run. M6 builds them, and the chapter is written in M7.
+This chapter will tell how a program sends a batch of requests in one
+round trip by a pipeline, stopping at its first failure if asked; shares
+a bounded set of connections by a pool; and holds several named
+connections by the SQL-agent. It is filled at milestone M6.

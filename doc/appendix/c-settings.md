@@ -2,8 +2,7 @@
 
 [Contents](README.md)
 
-This appendix will list every connection setting, its default and the
-TURBOREL_* variable that sets it, as turborel's client reads them: the
-hosts and ports, the user and password, the TLS mode, channel binding,
-the service and password files, the target role and the rest. It is
-written in M5.
+This appendix will list every connection setting, its name in options,
+the URI and the service file, its environment variable, what it says and
+its default, and each setting of a pool. It is filled at milestone M5,
+and the pool's settings at M6.

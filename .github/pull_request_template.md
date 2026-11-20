@@ -35,10 +35,10 @@ earlier build sees the driver send; "none" if nothing changes. -->
 <!-- If the change claims any: what was measured, before and after, with
 the numbers. Otherwise "none claimed". -->
 
-## Checklist (RULES.md §7)
+## Checklist (RULES.md §6)
 
 - [ ] One logical change per commit, each passing `./gradlew check`
 - [ ] The protocol or turborel-client cited in the code (R-DOC-4) and in the tests (`Verifies:`, R-TRACE-1)
-- [ ] Normal, boundary and robustness tests (R-TEST-2), a failing-first test for a fix (R-TEST-5)
-- [ ] Every failure a `TurborelException`, nothing held without bound, no new dependency without a decision (R-ERR-1, R-ERR-4, R-DEP)
-- [ ] CONFORMANCE.md, RULES.md, TODO.md and `doc/` updated where they change
+- [ ] Normal, boundary and robustness tests (R-TEST-2), a failing-first test for a fix (R-TEST-6)
+- [ ] Every failure a `TurborelException`, nothing held without bound, no new dependency without a decision (R-ERR-1, R-SAFE-1, R-DEP-1)
+- [ ] CONFORMANCE.md, RULES.md, TODO.md and `doc/` updated where they change (R-TRACE-4, R-DOC-7)

@@ -1,7 +1,6 @@
 # Volume I: User's Guide
 
-For anyone who connects a Java program or tool to turborel with the
-driver: how to use it, chapter by chapter, read in order.
+For anyone who writes a Java program against Turborel: installing the driver, connecting, running statements and moving data, chapter by chapter, read in order.
 
 [The documentation set](../README.md)
 
@@ -15,5 +14,5 @@ driver: how to use it, chapter by chapter, read in order.
 - [Large Objects](06-large-objects.md)
 - [Copying, Importing and Exporting](07-copying.md)
 - [Pipelines and Pools](08-pipelines-and-pools.md)
-- [Connection Settings](09-settings.md)
-- [Errors and Warnings](10-errors.md)
+- [Settings](09-settings.md)
+- [Errors and Diagnostics](10-errors.md)

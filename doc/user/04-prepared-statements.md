@@ -2,7 +2,8 @@
 
 [Contents](README.md)
 
-This chapter will tell how a program prepares a statement once and runs
-it many times with parameters: `PreparedStatement`, the types its
-parameters take, cursors read in parts, and describing a statement. M3
-builds them beneath JDBC, and the chapter is written in M7.
+This chapter will tell how a program prepares a statement once, its
+parameters written `?`, and runs it many times; how it reads a query's
+rows through a cursor, in parts, several cursors of one statement at
+once; and how it describes a statement and lets it go. It is filled at
+milestone M3.

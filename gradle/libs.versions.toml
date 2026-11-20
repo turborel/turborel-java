@@ -1,4 +1,4 @@
-# Every version the build uses, in one place (RULES.md D4, D5). None of
+# Every version the build uses, in one place (RULES.md D4, D10). None of
 # these is a dependency of the published library: each is a tool of the
 # build, or a test's, or an annotation read only as the code compiles.
 

@@ -2,6 +2,9 @@
 /build/
 /.gradle/
 /.kotlin/
+/buildSrc/build/
+/buildSrc/.gradle/
+/buildSrc/.kotlin/
 
 # Editors and the platform
 .idea/
