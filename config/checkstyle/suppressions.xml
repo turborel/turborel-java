@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!--
+  Tests may use literal fixtures (RULES.md R-CONST-4), and their helpers
+  need no doc comment of their own; a test's own doc comment, its
+  citation, is checked by `./gradlew traceability` (R-TRACE-1).
+-->
+<suppressions>
+  <suppress checks="MagicNumber" files="[\\/]src[\\/]test[\\/]"/>
+  <suppress checks="MissingJavadocMethod" files="[\\/]src[\\/]test[\\/]"/>
+</suppressions>

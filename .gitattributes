@@ -1,0 +1,10 @@
+# Text files are checked out ending lines with LF on every platform, as
+# Spotless and Checkstyle hold the sources to LF on each.
+* text=auto eol=lf
+
+# The exception: cmd.exe misreads a batch file's labels in LF lines, so
+# the Gradle wrapper's batch file keeps CRLF.
+*.bat text eol=crlf
+
+# The wrapper's jar is binary.
+*.jar binary

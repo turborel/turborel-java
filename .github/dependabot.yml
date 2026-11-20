@@ -1,0 +1,24 @@
+# Updates of the build's tools and of the workflows' actions (RULES.md D5,
+# R-DEP). Each is proposed once it is two weeks old, as its own pull
+# request, its commit in CONTRIBUTING.md's form.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "build"
+    labels: ["dependencies", "area/build"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "ci"
+    labels: ["dependencies", "area/ci"]

@@ -1,0 +1,8 @@
+#!/bin/sh
+# The fast checks, before each commit (RULES.md R-PROC-1): format, lints,
+# Error Prone, Checkstyle, the tests and their citations. CI runs the rest
+# of `./gradlew check`, SpotBugs, Javadoc and the coverage floor, besides.
+# The checks live in the Gradle build; this file only hands over to it,
+# because git runs hooks as scripts (on Windows, through the sh Git for
+# Windows ships). Install with `git config core.hooksPath .githooks`.
+exec ./gradlew --quiet spotlessCheck checkstyleMain checkstyleTest errorProneMain errorProneTest test traceability

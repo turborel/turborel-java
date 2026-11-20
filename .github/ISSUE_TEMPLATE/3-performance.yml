@@ -1,0 +1,50 @@
+name: Performance
+description: Something is slower than it was, or than it should be, or takes too much memory.
+labels: ["performance"]
+body:
+  - type: markdown
+    attributes:
+      value: Numbers, not impressions. Put `[REGRESSION]` first in the title if an earlier commit was faster.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What is slow
+      description: The workload, and what it costs (time, throughput, memory, round trips), against what you expected and why, e.g. against turborel-client doing the same.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The program, the schema, how much data and how it is made, and the calls timed, with how many threads and connections at once.
+      render: java
+    validations:
+      required: true
+  - type: textarea
+    id: measured
+    attributes:
+      label: Measurements
+      description: What you measured and how, with several runs, after the JVM warmed up.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression
+      description: If it was faster before, give the last good commit and, if you ran `git bisect`, the first bad one.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "`git rev-parse --short=12 HEAD`"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        The platform, processor, cores and memory; the JDK, its version and its heap settings; the turborel server's release; and the network between them (loopback, a LAN, TLS or not).
+    validations:
+      required: true

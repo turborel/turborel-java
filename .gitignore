@@ -1,0 +1,14 @@
+# Gradle's output and caches
+/build/
+/.gradle/
+/.kotlin/
+
+# Editors and the platform
+.idea/
+*.iml
+/out/
+.vscode/
+.DS_Store
+
+# Coding agents' local state
+.claude/

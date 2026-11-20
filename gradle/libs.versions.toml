@@ -1,0 +1,26 @@
+# Every version the build uses, in one place (RULES.md D4, D5). None of
+# these is a dependency of the published library: each is a tool of the
+# build, or a test's, or an annotation read only as the code compiles.
+
+[versions]
+checkstyle = "14.4.0"
+errorprone = "2.53.0"
+jacoco = "0.8.16"
+jspecify = "1.0.1"
+junit = "5.14.4"
+nullaway = "0.14.4"
+palantir-java-format = "2.103.0"
+spotbugs = "4.10.5"
+
+[libraries]
+errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+
+[plugins]
+errorprone = { id = "net.ltgt.errorprone", version = "5.2.0" }
+spotbugs = { id = "com.github.spotbugs", version = "6.5.13" }
+spotless = { id = "com.diffplug.spotless", version = "8.11.0" }

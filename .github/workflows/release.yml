@@ -1,0 +1,60 @@
+# Builds and checks a release, and keeps what would be published as the
+# run's artifact. It publishes nothing: its last step is written but
+# disabled until the owner publishes every turborel driver together
+# (VERSIONING.md, RULES.md R-PROC-5). Run by hand alone.
+name: release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: JDK 17, which compiles the library
+        id: jdk17
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: JDK 21, which runs Error Prone and Checkstyle
+        id: jdk21
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Gradle, its wrapper validated
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: Build, check, and stage the jars and POM in build/staging-deploy
+        run: >-
+          ./gradlew check publishMavenPublicationToStagingRepository
+          "-Dorg.gradle.java.installations.paths=${{ steps.jdk17.outputs.path }},${{ steps.jdk21.outputs.path }}"
+      - name: Keep what would be published
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: staging-deploy
+          path: build/staging-deploy/
+      # Disabled: the owner enables this step, by removing its `if`, when the
+      # drivers are published, and first gives the repository the three
+      # secrets it names. It signs the staged files and uploads them to the
+      # Sonatype Central Portal, to be released there by hand.
+      - name: Sign and upload to Maven Central
+        if: ${{ false }}
+        env:
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.MAVEN_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+          CENTRAL_PORTAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
+        run: |
+          ./gradlew publishMavenPublicationToStagingRepository --rerun-tasks \
+            "-Dorg.gradle.java.installations.paths=${{ steps.jdk17.outputs.path }},${{ steps.jdk21.outputs.path }}"
+          (cd build/staging-deploy && zip -r ../central-bundle.zip com -x '*maven-metadata.xml*')
+          curl --fail-with-body \
+            -H "Authorization: Bearer ${CENTRAL_PORTAL_TOKEN}" \
+            -F bundle=@build/central-bundle.zip \
+            "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED"

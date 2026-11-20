@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+  The code rules a tool can check (RULES.md §3). Formatting is Spotless's
+  (R-STYLE-1); these are the rules beyond it. A change of a threshold
+  changes RULES.md in the same commit (R-PROC-3).
+-->
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="error"/>
+
+  <module name="SuppressionFilter">
+    <property name="file" value="${config_loc}/suppressions.xml"/>
+  </module>
+  <module name="SuppressWarningsFilter"/>
+
+  <!-- R-SIZE-2: a file of at most 600 lines. -->
+  <module name="FileLength">
+    <property name="max" value="600"/>
+  </module>
+  <module name="FileTabCharacter"/>
+  <module name="NewlineAtEndOfFile">
+    <property name="lineSeparator" value="lf"/>
+  </module>
+
+  <!-- R-DOC-5: code never cites TODO.md. -->
+  <module name="RegexpSingleline">
+    <property name="format" value="TODO\.md"/>
+    <property name="message" value="Code never cites TODO.md (R-DOC-5)."/>
+  </module>
+
+  <module name="TreeWalker">
+    <module name="SuppressWarningsHolder"/>
+
+    <!-- R-SIZE-1, R-SIZE-3: functions of at most 50 lines and 5 parameters. -->
+    <module name="MethodLength">
+      <property name="max" value="50"/>
+      <property name="countEmpty" value="false"/>
+      <property name="tokens" value="METHOD_DEF, CTOR_DEF, COMPACT_CTOR_DEF"/>
+    </module>
+    <module name="ParameterNumber">
+      <property name="max" value="5"/>
+      <property name="ignoreOverriddenMethods" value="true"/>
+      <property name="tokens" value="METHOD_DEF, CTOR_DEF"/>
+    </module>
+    <module name="RecordComponentNumber">
+      <property name="max" value="8"/>
+    </module>
+
+    <!-- R-CONST-1: no magic numbers. -->
+    <module name="MagicNumber">
+      <property name="ignoreNumbers" value="0, 1"/>
+      <property name="ignoreHashCodeMethod" value="true"/>
+      <property name="ignoreAnnotation" value="true"/>
+    </module>
+
+    <!-- R-DOC-1: every public and protected item documented. -->
+    <module name="MissingJavadocPackage"/>
+    <module name="MissingJavadocType">
+      <property name="scope" value="protected"/>
+    </module>
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="protected"/>
+      <property name="allowMissingPropertyJavadoc" value="false"/>
+    </module>
+    <module name="JavadocMethod"/>
+    <module name="JavadocType"/>
+    <module name="NonEmptyAtclauseDescription"/>
+
+    <!-- R-DOC-5: no TODO comments. -->
+    <module name="TodoComment">
+      <property name="format" value="(TODO|FIXME|XXX)"/>
+    </module>
+
+    <!-- R-ERR-1, R-ERR-3: no exits, no printing, no swallowed failures. -->
+    <module name="Regexp">
+      <property name="format" value="System\.(exit|out|err)\b|\.printStackTrace\(|Runtime\.getRuntime\(\)\.(exit|halt)"/>
+      <property name="illegalPattern" value="true"/>
+      <property name="message" value="No exits or printing in library code (R-ERR-1, R-STYLE-4)."/>
+    </module>
+    <module name="EmptyCatchBlock"/>
+    <module name="IllegalCatch"/>
+    <module name="IllegalThrows"/>
+
+    <!-- R-CF-1: a decision of at most 4 conditions. -->
+    <module name="BooleanExpressionComplexity">
+      <property name="max" value="3"/>
+    </module>
+    <module name="CyclomaticComplexity">
+      <property name="max" value="10"/>
+    </module>
+    <module name="NestedIfDepth">
+      <property name="max" value="3"/>
+    </module>
+    <module name="NestedTryDepth"/>
+
+    <!-- R-STYLE: idiom. -->
+    <module name="AvoidStarImport"/>
+    <module name="UnusedImports"/>
+    <module name="IllegalImport"/>
+    <module name="RedundantImport"/>
+    <module name="OneTopLevelClass"/>
+    <module name="OuterTypeFilename"/>
+    <module name="NeedBraces"/>
+    <module name="MultipleVariableDeclarations"/>
+    <module name="OneStatementPerLine"/>
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+    <module name="FinalClass"/>
+    <module name="HideUtilityClassConstructor"/>
+    <module name="EqualsHashCode"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StringLiteralEquality"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="FallThrough"/>
+    <module name="DefaultComesLast"/>
+    <module name="InnerAssignment"/>
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+  </module>
+</module>

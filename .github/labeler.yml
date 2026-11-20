@@ -1,0 +1,64 @@
+area/codec:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/codec/**", "src/test/java/com/turborel/jdbc/internal/codec/**"]
+
+area/transport:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/transport/**", "src/test/java/com/turborel/jdbc/internal/transport/**"]
+
+area/auth:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/auth/**", "src/test/java/com/turborel/jdbc/internal/auth/**"]
+
+area/tls:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/tls/**", "src/test/java/com/turborel/jdbc/internal/tls/**"]
+
+area/session:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/session/**", "src/test/java/com/turborel/jdbc/internal/session/**"]
+
+area/statements:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/statements/**", "src/test/java/com/turborel/jdbc/internal/statements/**"]
+
+area/lobs:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/lobs/**", "src/test/java/com/turborel/jdbc/internal/lobs/**"]
+
+area/copy:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/copy/**", "src/test/java/com/turborel/jdbc/internal/copy/**"]
+
+area/settings:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/settings/**", "src/test/java/com/turborel/jdbc/internal/settings/**"]
+
+area/pipeline:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/pipeline/**", "src/test/java/com/turborel/jdbc/internal/pipeline/**"]
+
+area/pool:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/internal/pool/**", "src/test/java/com/turborel/jdbc/internal/pool/**"]
+
+# The exported package alone, not its internal packages.
+area/api:
+  - changed-files:
+      - any-glob-to-any-file: ["src/main/java/com/turborel/jdbc/*.java", "src/test/java/com/turborel/jdbc/*.java", "src/main/java/module-info.java", "src/main/resources/**"]
+
+area/doc:
+  - changed-files:
+      - any-glob-to-any-file: ["doc/**", "README.md", "RULES.md", "CONFORMANCE.md", "TODO.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "SECURITY.md", "TRADEMARK.md", "VERSIONING.md"]
+
+area/ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", ".githooks/**"]
+
+area/build:
+  - changed-files:
+      - any-glob-to-any-file: ["build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/**", "gradlew", "gradlew.bat", "config/**"]
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: ["gradle/libs.versions.toml", "gradle/wrapper/**"]
