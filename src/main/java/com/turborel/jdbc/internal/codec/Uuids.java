@@ -23,9 +23,6 @@ final class Uuids {
 
     private static final int NIBBLE = 4;
 
-    /** The characters of White_Space outside its two ranges, tab to carriage return and U+2000 to U+200A. */
-    private static final String WHITE_SPACE = " \u0085\u00A0\u1680\u2028\u2029\u202F\u205F\u3000";
-
     private Uuids() {}
 
     /**
@@ -64,22 +61,13 @@ final class Uuids {
     static String trim(String text) {
         int start = 0;
         int end = text.length();
-        while (start < end && isWhiteSpace(text.charAt(start))) {
+        while (start < end && WhiteSpace.is(text.charAt(start))) {
             start++;
         }
-        while (end > start && isWhiteSpace(text.charAt(end - 1))) {
+        while (end > start && WhiteSpace.is(text.charAt(end - 1))) {
             end--;
         }
         return text.substring(start, end);
-    }
-
-    /** Whether a character is of Unicode's White_Space property, as Rust's {@code char::is_whitespace}. */
-    private static boolean isWhiteSpace(char c) {
-        return within(c, '\t', '\r') || within(c, '\u2000', '\u200A') || WHITE_SPACE.indexOf(c) >= 0;
-    }
-
-    private static boolean within(char c, char first, char last) {
-        return c >= first && c <= last;
     }
 
     /**
