@@ -126,13 +126,16 @@ public sealed interface Value
     /**
      * A date, tag 8, a time, tag 9, or a timestamp, tag 11, of either kind.
      *
-     * <p>Without a zone, the displacement is the one the value is shown in.
+     * <p>Without a zone, the displacement is the one the value is shown in. The instant of a
+     * timestamp is microseconds in UTC from 0001-01-01 00:00:00; of a date, its midnight's; of a
+     * time, microseconds from midnight UTC, within a day ([PROTOCOL Values]).
      *
      * @param moment which of them
      * @param zoned whether its type is WITH TIME ZONE
      * @param precision its precision, a {@code u8}
      * @param displacement its zone's displacement from UTC, in minutes
-     * @param micros its instant, microseconds in UTC
+     * @param micros its instant, microseconds in UTC from 0001-01-01 00:00:00, or from midnight
+     *     for a time
      */
     record Datetime(Moment moment, boolean zoned, int precision, short displacement, long micros) implements Value {
         /** The least displacement, -12:59, in minutes ([PROTOCOL Values]). */
