@@ -31,8 +31,9 @@ and pools.
 
 The driver is built in milestones, M0 to M8. Its low-level client
 connects, runs and prepares statements, controls its session, reads and
-writes large objects, and copies, imports and exports rows; settings
-come with M5, and the JDBC classes with M7. [CONFORMANCE.md](CONFORMANCE.md) shows what is done,
+writes large objects, copies, imports and exports rows, and connects by
+settings to one of several servers; pipelines and pools come with M6,
+and the JDBC classes with M7. [CONFORMANCE.md](CONFORMANCE.md) shows what is done,
 row by row, and [TODO.md](TODO.md) what is open.
 
 ## Requirements
