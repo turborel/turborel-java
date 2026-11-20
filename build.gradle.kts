@@ -111,13 +111,19 @@ val errorProneTest = errorProne(
 )
 
 tasks.javadoc {
-    // The API is the exported package; the internal packages are documented
-    // in their source, checked by javac above.
+    // The API is the exported package; the internal packages are documented in
+    // their source, checked by javac above, and read here from the classes the
+    // module compiled to, patched into it, so the API's classes that use them
+    // resolve.
     exclude("com/turborel/jdbc/internal/**")
     (options as StandardJavadocDocletOptions).apply {
         encoding = "UTF-8"
         addBooleanOption("Xdoclint:all", true)
         addBooleanOption("Werror", true)
+        addStringOption(
+            "-patch-module",
+            "com.turborel.jdbc=" + sourceSets.main.get().output.classesDirs.asPath,
+        )
     }
 }
 

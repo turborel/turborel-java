@@ -76,4 +76,65 @@
       <Bug pattern="EI_EXPOSE_REP2"/>
     </Or>
   </Match>
+  <!-- A JDBC object hands out what JDBC says it hands out: a statement
+       its connection and result set, a result set its statement, each
+       its warnings, the metadata its connection, a data source the log
+       writer it was given. -->
+  <Match>
+    <Or>
+      <Class name="com.turborel.jdbc.JdbcStatement"/>
+      <Class name="com.turborel.jdbc.JdbcResultSet"/>
+      <Class name="com.turborel.jdbc.JdbcConnection"/>
+      <Class name="com.turborel.jdbc.JdbcDatabaseMetaData"/>
+      <Class name="com.turborel.jdbc.TurborelDataSource"/>
+    </Or>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <!-- JDBC's names: a driver's class is called Driver, as java.sql's
+       interface is, and JDBC writes setAutoCommit and getURL where the
+       low-level client and a data source write setAutocommit and
+       getUrl. -->
+  <Match>
+    <Or>
+      <Class name="com.turborel.jdbc.Driver"/>
+      <Class name="com.turborel.jdbc.JdbcConnection"/>
+      <Class name="com.turborel.jdbc.JdbcDatabaseMetaData"/>
+    </Or>
+    <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE,NM_CONFUSING"/>
+  </Match>
+  <!-- A prepared statement prepares its SQL as it is made, so a refusal
+       leaves the constructor; the class has no finalizer and is the
+       package's own, so nothing can reach the object half made. -->
+  <Match>
+    <Class name="com.turborel.jdbc.JdbcPreparedStatement"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
+  <!-- The JDBC tests call a method in assertThrows for its failure, so
+       no result is made to close or read, and they run SQL they build of
+       their own tables' names and values. -->
+  <Match>
+    <Class name="~com\.turborel\.jdbc\.(Live.*|Objects)Test.*"/>
+    <Or>
+      <Bug pattern="RV_RETURN_VALUE_IGNORED"/>
+      <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+      <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
+      <Bug pattern="ODR_OPEN_DATABASE_RESOURCE"/>
+      <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+    </Or>
+  </Match>
+  <!-- These tests read column 0 and set parameter 0 to see them refused. -->
+  <Match>
+    <Class name="~com\.turborel\.jdbc\.(EdgesTest|LiveJdbcStatementTest).*"/>
+    <Or>
+      <Bug pattern="SQL_BAD_RESULTSET_ACCESS"/>
+      <Bug pattern="SQL_BAD_PREPARED_STATEMENT_ACCESS"/>
+    </Or>
+  </Match>
+  <Match>
+    <Class name="com.turborel.jdbc.LiveJdbc"/>
+    <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+  </Match>
 </FindBugsFilter>

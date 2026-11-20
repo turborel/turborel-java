@@ -56,6 +56,7 @@ Each is told in full in [§7](#7-the-decisions).
 | D11 | One jar, a JPMS module, published to Maven Central with its sources and Javadoc |
 | D12 | Tests are JUnit Jupiter's, in the packages they test |
 | D13 | TLS is the JDK's, and the platform's authorities are the JDK's trusted ones |
+| D14 | JDBC's types are mapped from each column's declared type, else as the server sends it |
 
 ---
 
@@ -466,6 +467,12 @@ its diagnostics.
 A connection a peer's message broke fails with SQLCODE -919, SQLSTATE
 08006 (`internal.codec.Broken`), as Turborel's does.
 
+JDBC requires two failures of its own types, and the driver gives them,
+each carrying the driver's SQLSTATE and SQLCODE: a batch that fails is a
+`BatchUpdateException` of every count, its cause the `TurborelException`
+of the first statement that failed; and `getParentLogger`, of a driver
+that logs nothing, is a `SQLFeatureNotSupportedException`.
+
 #### D10. Gradle builds it, with JDK 17's compiler, and the checks run on JDK 21
 
 The build is Gradle's, in the Kotlin DSL, run by the wrapper committed
@@ -515,6 +522,40 @@ either is set. The driver takes the same two variables the same way;
 without them, it takes the JDK's own trusted authorities: its `cacerts`,
 or the store `javax.net.ssl.trustStore` and `javax.net.ssl.trustStoreType`
 name. For a Java program those are the platform's.
+
+#### D14. JDBC's types are mapped from each column's declared type, else as the server sends it
+
+A result set's and a parameter's types are those the server describes
+in its Description and Prepared (`[PROTOCOL Data types]`). The tag a
+value is written by names one exact number for SMALLINT, INTEGER,
+BIGINT, DECIMAL and NUMERIC, its precision and scale alone, and one
+approximate number for REAL, DOUBLE PRECISION and FLOAT. So the driver
+asks for `declared-types` as it connects, as turborel-client does, and
+the server ends each Prepared and Description with each column's
+declared type, its name and as SQL writes it (`[PROTOCOL Declared
+types]`).
+
+A column's JDBC type is its declared type's, where the server told it
+and JDBC numbers it: `getColumnType` gives `Types.INTEGER`, `SMALLINT`,
+`BIGINT`, `DECIMAL`, `NUMERIC`, `REAL`, `DOUBLE` or `FLOAT`,
+`getColumnTypeName` the declared name, a distinct type's own schema and
+name, and `getObject` an `Integer` of an INTEGER or a SMALLINT, a `Long`
+of a BIGINT and a `Double` of a FLOAT, as JDBC maps them. An array's
+elements take the element type its declared type writes. Where no
+declared type is told, of an expression the server types as its tag
+does, or of a server that does not grant the capability, the column is
+mapped as the tag says: an exact number is DECIMAL of its precision and
+scale and `getObject` gives a `BigDecimal` (D2), an approximate number
+REAL to 24 binary digits and DOUBLE past them, a datetime of its kind,
+and so on. The driver does not guess a declared type the server did not
+tell. A parameter's type is always as its tag says, as the protocol
+declares none for it. `getInt` and the other getters read any exact
+number in their range.
+
+DatabaseMetaData reads the Information Schema, which names each
+column's type, so `getColumns` gives INTEGER, SMALLINT and BIGINT as
+JDBC numbers them. A type JDBC has no number for, an interval, JSON, a
+UUID or a multiset, is `Types.OTHER`, under its SQL name.
 
 ---
 

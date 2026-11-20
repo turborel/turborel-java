@@ -18,4 +18,7 @@ module com.turborel.jdbc {
     requires static transitive org.jspecify;
 
     exports com.turborel.jdbc;
+
+    provides java.sql.Driver with
+            com.turborel.jdbc.Driver;
 }
