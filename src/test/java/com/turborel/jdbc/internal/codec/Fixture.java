@@ -96,4 +96,27 @@ final class Fixture {
         assertEquals(Failures.BEYOND_SQLSTATE, failure.getSQLState(), failure.getMessage());
         return failure;
     }
+
+    /** The bytes a value encodes to. */
+    static byte[] encoded(Value value) throws TurborelException {
+        Writer w = new Writer();
+        value.encode(w);
+        return w.toByteArray();
+    }
+
+    /** The value bytes decode to, every byte read. */
+    static Value decoded(byte[] bytes) throws TurborelException {
+        Reader r = reader(bytes);
+        Value value = ValueCodec.read(r);
+        r.finish();
+        return value;
+    }
+
+    /** The type bytes decode to, every byte read. */
+    static DataType type(byte[] bytes) throws TurborelException {
+        Reader r = reader(bytes);
+        DataType type = TypeCodec.read(r);
+        r.finish();
+        return type;
+    }
 }
