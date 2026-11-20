@@ -396,7 +396,7 @@ cited under the page's section on values.
 | ID | Row | Citation | Status |
 |---|---|---|---|
 | P-CHUSER-1 | ChangeUser: user, mechanism, initial bytes, then the same Challenge and Answer steps as Hello's | `[PROTOCOL ChangeUser 'U']` | not yet |
-| P-CHUSER-2 | Accepted: the session renewed as by Reset, under a new cancel key; the Notice and Statuses, then Ready with the same capabilities | `[PROTOCOL ChangeUser 'U']` | not yet |
+| P-CHUSER-2 | Accepted: the session renewed as by Reset, under a new cancel key, no transaction active after it (RULES.md D8); the Notice and Statuses, then Ready with the same capabilities | `[PROTOCOL ChangeUser 'U']` | not yet |
 | P-CHUSER-3 | Refused: the connection fails | `[PROTOCOL ChangeUser 'U']` | not yet |
 
 ### CopyIn 'I'
