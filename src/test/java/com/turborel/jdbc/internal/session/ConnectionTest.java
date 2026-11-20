@@ -27,7 +27,7 @@ class ConnectionTest {
      * Verifies: [PROTOCOL Opening a connection] the client sends Hello, takes each Status, then
      * Ready: its authorization identifier, cancel key, capabilities granted and server; its first
      * message, a Hello asking for every capability but compression ([CLIENT What a connection asks
-     * for]).
+     * for]), and nothing but Hello sent before Ready ([PROTOCOL Requests]).
      */
     @Test
     void helloThenStatusThenReady() throws TurborelException {

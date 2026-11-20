@@ -189,6 +189,11 @@ class ScramTest {
             cache.derived("p", Octets.of(new byte[] {(byte) i}), 1);
         }
         assertEquals(KeyCache.ENTRIES, cache.size());
+        long[] before = cache.lookups();
+        cache.derived("p", Octets.of(new byte[] {(byte) (KeyCache.ENTRIES + 4)}), 1);
+        assertEquals(before[0] + 1, cache.lookups()[0], "the newest kept");
+        cache.derived("p", Octets.of(new byte[] {0}), 1);
+        assertEquals(before[1] + 1, cache.lookups()[1], "the oldest dropped first");
         assertEquals("KeyCache(64 entries)", cache.toString());
         cache.clear();
         assertEquals(0, cache.size());

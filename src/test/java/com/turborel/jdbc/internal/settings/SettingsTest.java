@@ -86,6 +86,13 @@ class SettingsTest {
         assertEquals(List.of(new Host.Tcp(Settings.DEFAULT_HOST, Settings.DEFAULT_PORT)), bare.hosts());
         assertEquals(Timeouts.CONNECT_WITHIN, bare.connectTimeout(), "30 seconds by default");
         assertEquals(Path.of(System.getProperty("user.home"), ".turborel_pass"), bare.passfile());
+        assertEquals(TlsMode.PREFER, bare.tlsMode(), "prefer by default");
+        assertEquals(TargetRole.ANY, bare.target(), "any by default");
+        assertEquals(LoadBalance.DISABLE, bare.loadBalance(), "disable by default");
+        assertEquals(
+                new TlsFiles(null, false, null, null, null),
+                bare.tls(),
+                "no roots, certificate or key, nor the platform's");
         assertTrue(Options.fromUri("turborel://").isEmpty());
         assertEquals(
                 "bob",

@@ -69,4 +69,14 @@ public final class Scripted {
     public static byte[] error(int sqlcode, String sqlstate) throws TurborelException {
         return Script.error(sqlcode, sqlstate);
     }
+
+    /**
+     * Every byte the client wrote to a connection {@link #after} made, its login's first.
+     *
+     * @param connection the connection
+     * @return the bytes
+     */
+    public static byte[] written(Connection connection) {
+        return ((Script) connection.wire().duplex()).written();
+    }
 }

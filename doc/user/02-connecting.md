@@ -120,8 +120,9 @@ ANN, by its certificate
 The authorities trusted may be a file's, the platform's, or both:
 `Roots.of` makes a store of them, for `TlsConfig.of`. The platform's are
 those of the files the environment's SSL_CERT_FILE and SSL_CERT_DIR
-name, if either is set, else the JDK's own trusted authorities (RULES.md
-D13). A certificate not of the name, or of an authority not trusted,
+name, if either is set, SSL_CERT_DIR a list of directories apart by the
+platform's path separator, each that cannot be read passed over; else
+the JDK's own trusted authorities (RULES.md D13). A certificate not of the name, or of an authority not trusted,
 fails the handshake (SQLSTATE 08006).
 
 SCRAM-SHA-256-PLUS binds by `tls-exporter` where the JDK exports TLS

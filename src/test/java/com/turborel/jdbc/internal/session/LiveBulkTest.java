@@ -100,6 +100,13 @@ class LiveBulkTest {
                 dropped.send(List.of(integer(2), new Value.Text("b")));
             }
             assertEquals(1, count(connection, "KEYED_ROWS"));
+            Copying sent = connection.bulk().copyIn("KEYED_ROWS", List.of());
+            for (List<Value> row : numbered(1000, 20_000)) {
+                sent.send(row);
+            }
+            sent.abandon();
+            assertEquals(0L, connection.told().rowsAffected(), "the Complete counts none");
+            assertEquals(1, count(connection, "KEYED_ROWS"), "rows that reached the server undone");
             statements.query("ROLLBACK");
             connection.setAutocommit(true);
             assertEquals(3, connection.bulk().copyRows("KEYED_ROWS", List.of(), numbered(1, 3)));

@@ -15,7 +15,8 @@ public final class Sockets {
     private Sockets() {}
 
     /**
-     * A TCP connection to {@code address}, made, then read, each within {@code within} if given.
+     * A TCP connection to {@code address}, made, then read, each within {@code within} if given;
+     * of an address not resolved, to each of its host's addresses in turn, until one is connected.
      *
      * @param address the address
      * @param within how long it waits, or without limit
@@ -23,6 +24,9 @@ public final class Sockets {
      * @throws TurborelException a connection failure if it cannot be made, in time
      */
     public static Socket connected(InetSocketAddress address, @Nullable Duration within) throws TurborelException {
+        if (address.isUnresolved()) {
+            return connected(address.getHostString(), address.getPort(), within);
+        }
         Socket socket = new Socket();
         try {
             socket.setTcpNoDelay(true);

@@ -5,6 +5,7 @@ import static com.turborel.jdbc.internal.session.LiveStatementsTest.integer;
 import static com.turborel.jdbc.internal.session.LiveStatementsTest.rows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -80,10 +81,19 @@ class LiveControlsTest {
             Statement prepared = statements.prepare("SELECT N FROM RESET_ONE");
             statements.query("INSERT INTO RESET_ONE VALUES (1)");
             assertTrue(connection.inTransaction());
+            statements.query("DECLARE LOCAL TEMPORARY TABLE MODULE.SCRATCH (K INTEGER) ON COMMIT PRESERVE ROWS");
+            Canceller canceller = connection.canceller();
             List<Reply.Notice> heard = new ArrayList<>();
             connection.setNoticeHandler(heard::add);
             connection.controls().reset();
             assertFalse(connection.inTransaction());
+            Canceller kept = connection.canceller();
+            assertTrue(canceller != null && kept != null && canceller.key().equals(kept.key()), "the cancel key kept");
+            assertThrows(
+                    TurborelException.class,
+                    () -> statements.query("SELECT K FROM MODULE.SCRATCH"),
+                    "temporary tables gone");
+            statements.query("ROLLBACK");
             assertEquals(
                     List.of("01T01"), heard.stream().map(Reply.Notice::sqlstate).toList());
             assertEquals("NOTICE", heard.get(0).diagnostics().get(DiagnosticField.SEVERITY));
@@ -133,7 +143,14 @@ class LiveControlsTest {
             Canceller before = connection.canceller();
             assertNotNull(before);
             connection.statements().query("VALUES 1");
+            List<Reply.Notice> heard = new ArrayList<>();
+            connection.setNoticeHandler(heard::add);
             connection.controls().changeUser("bob", new Password("bob's"));
+            assertEquals(
+                    List.of("01T01"), heard.stream().map(Reply.Notice::sqlstate).toList(), "as Reset");
+            Canceller after = connection.canceller();
+            assertNotNull(after);
+            assertNotEquals(before.key(), after.key(), "a new cancel key");
             assertEquals("BOB", connection.authorization());
             assertEquals("BOB", connection.setting("AUTHORIZATION"));
             assertEquals("NO", connection.setting("OWNER"));

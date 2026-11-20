@@ -63,8 +63,8 @@ public final class Connect {
     }
 
     /**
-     * Connects over TLS to the server named {@code name} at {@code host}'s {@code port}, its
-     * handshake a step of its login.
+     * Connects over TLS to the server named {@code name} at {@code host}'s {@code port}, each of
+     * its addresses tried in turn by one connection each, its handshake a step of its login.
      *
      * @param host the server's name or address
      * @param port its port
@@ -77,11 +77,8 @@ public final class Connect {
      */
     public static Connection tls(String host, int port, String name, TlsConfig config, Login login)
             throws TurborelException {
-        Socket socket = Sockets.connected(host, port, Timeouts.DEFAULT.connect());
-        InetSocketAddress address = new InetSocketAddress(socket.getInetAddress(), port);
-        Sockets.close(socket);
         return to(
-                new Target.Tls(address, name, config),
+                new Target.Tls(InetSocketAddress.createUnresolved(host, port), name, config),
                 login.user(),
                 login.mechanism(),
                 Timeouts.DEFAULT,

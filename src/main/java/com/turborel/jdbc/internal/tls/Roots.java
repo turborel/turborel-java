@@ -25,6 +25,9 @@ import org.jspecify.annotations.Nullable;
  * {@code javax.net.ssl.trustStore} names.
  */
 public final class Roots {
+    /** A split's limit that keeps every part, the empty ones too. */
+    private static final int EVERY = -1;
+
     /** The variable naming a PEM file of the platform's authorities. */
     public static final String SSL_CERT_FILE = "SSL_CERT_FILE";
 
@@ -61,29 +64,52 @@ public final class Roots {
         return store(trusted);
     }
 
+    /**
+     * The platform's authorities, as turborel-client's rustls-native-certs loads them: of
+     * SSL_CERT_FILE and SSL_CERT_DIR, a list of directories apart by the platform's separator, if
+     * either is set, each file or directory that cannot be read passed over; else the JDK's
+     * trusted ones. None at all fails, saying why.
+     */
     private static List<X509Certificate> platform(UnaryOperator<@Nullable String> environment)
             throws TurborelException {
-        String file = nonEmpty(environment.apply(SSL_CERT_FILE));
-        String dir = nonEmpty(environment.apply(SSL_CERT_DIR));
-        if (file == null && dir == null) {
+        String file = environment.apply(SSL_CERT_FILE);
+        List<Path> dirs = new ArrayList<>();
+        String dir = environment.apply(SSL_CERT_DIR);
+        if (dir != null) {
+            for (String each : dir.split(java.util.regex.Pattern.quote(java.io.File.pathSeparator), EVERY)) {
+                if (!each.isEmpty()) {
+                    dirs.add(Path.of(each));
+                }
+            }
+        }
+        if (file == null && dirs.isEmpty()) {
             return jdk();
         }
         List<X509Certificate> found = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
         if (file != null) {
-            found.addAll(Pem.certificates(Path.of(file)));
+            loaded(Path.of(file), found, errors);
         }
-        if (dir != null) {
-            found.addAll(directory(Path.of(dir)));
+        for (Path each : dirs) {
+            directory(each, found, errors);
+        }
+        if (found.isEmpty()) {
+            String why = errors.isEmpty() ? "they hold none" : String.join("; ", errors);
+            throw Broken.connection("[CLIENT Connecting] cannot trust the platform's certificate authorities: " + why);
         }
         return found;
     }
 
-    private static @Nullable String nonEmpty(@Nullable String value) {
-        return value == null || value.isEmpty() ? null : value;
+    /** The certificates of a file, added to {@code found}; one that cannot be read noted in {@code errors}. */
+    private static void loaded(Path file, List<X509Certificate> found, List<String> errors) {
+        try {
+            found.addAll(Pem.certificates(file));
+        } catch (TurborelException failed) {
+            errors.add(String.valueOf(failed.getMessage()));
+        }
     }
 
-    private static List<X509Certificate> directory(Path dir) throws TurborelException {
-        List<X509Certificate> found = new ArrayList<>();
+    private static void directory(Path dir, List<X509Certificate> found, List<String> errors) {
         try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
             for (Path each : files) {
                 if (Files.isRegularFile(each)) {
@@ -91,9 +117,8 @@ public final class Roots {
                 }
             }
         } catch (IOException e) {
-            throw Broken.connection("[CLIENT Connecting] cannot read " + dir + ": " + e.getMessage());
+            errors.add("cannot read " + dir + ": " + e.getMessage());
         }
-        return found;
     }
 
     /** The certificates of a file of a directory of authorities; a file of none is left out. */

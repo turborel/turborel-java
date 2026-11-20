@@ -115,11 +115,12 @@ class ImporterTest {
      * Verifies: [CLIENT Importing] an import that cannot begin stops before any row: a table's name
      * that is no name, a source whose headings cannot be read, an INSERT the server refuses, and a
      * table described for its columns that is not there; with no headings, the table's columns are
-     * taken, as a query of them describes them.
+     * taken, as a query of them describes them; an import is of 1000 rows a batch by default.
      */
     @Test
     void beforeAnyRow() throws TurborelException {
         Import into = Import.into("T");
+        assertEquals(1000, into.batch(), "1000 rows a batch by default");
         assertEquals(
                 "22000",
                 stopped(after(List.of()), new Given(ONE), Import.into("a b")).getSQLState());
@@ -212,6 +213,7 @@ class ImporterTest {
     void anImportByCopyStops() throws TurborelException {
         List<String> copy = List.of(Capability.COPY);
         Import into = Import.into("T");
+        assertEquals(1000, into.batch(), "1000 rows a batch by default");
         Connection dealloc = after(copy, prepared(false), failed(-103, "26000", false));
         assertEquals("26000", stopped(dealloc, new Given(ONE, row("1")), into).getSQLState());
         Connection empty = after(copy, prepared(false), done(false));
@@ -261,6 +263,7 @@ class ImporterTest {
     void theRowACopyNames() throws TurborelException {
         List<String> copy = List.of(Capability.COPY);
         Import into = Import.into("T");
+        assertEquals(1000, into.batch(), "1000 rows a batch by default");
         Connection named = after(copy, prepared(false), done(false), refusedWith("row 2 of the copy"));
         Import.Stopped second = stopped(named, new Given(ONE, row("1"), row("2")), into);
         assertEquals(new Source.Position(2, null), second.where());

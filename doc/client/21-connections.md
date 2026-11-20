@@ -156,8 +156,9 @@ cache.
 PKCS #8, PKCS #1 or SEC 1. `TlsConfig.of` takes a store of authorities,
 as `Roots.of` makes of a file's, the platform's, or both, and an
 identity or none. The platform's are those of the files SSL_CERT_FILE
-and SSL_CERT_DIR name, if either is set, else the JDK's own (RULES.md
-D13).
+and SSL_CERT_DIR name, if either is set, SSL_CERT_DIR a list of
+directories apart by the platform's path separator, each that cannot be
+read passed over; else the JDK's own (RULES.md D13).
 
 **Timeouts.** `connect` bounds connecting, TLS and each step of the
 login; `read` each read or write after. A named pipe is bounded only as

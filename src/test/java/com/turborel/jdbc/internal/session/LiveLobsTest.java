@@ -150,7 +150,7 @@ class LiveLobsTest {
     /**
      * Verifies: [PROTOCOL Lob 'L'] a character large object's octets are checked as UTF-8 as each
      * Append comes: one that is not is refused (SQLSTATE 22021), and every Append after; a
-     * character split between writes is taken whole; one that ends within a character is refused,
+     * character split between two Appends, the first sent by a flush, is taken whole; one that ends within a character is refused,
      * 22021, where it is used ([CLIENT Large objects]).
      */
     @Test
@@ -159,6 +159,7 @@ class LiveLobsTest {
             Statements statements = connection.statements();
             Lobs.Writer whole = connection.lobs().create(LobKind.CHARACTER);
             whole.write(new byte[] {'a', (byte) 0xC3});
+            whole.flush();
             whole.write(new byte[] {(byte) 0xA9});
             Lob.Locator written = whole.finish();
             Statement echo = statements.prepare("VALUES CAST(? AS CLOB(1K))");
@@ -166,7 +167,7 @@ class LiveLobsTest {
             assertArrayEquals(
                     "a\u00e9".getBytes(StandardCharsets.UTF_8),
                     ((Lob.Whole) rows.rows().get(0).get(0)).octets().toByteArray(),
-                    "a, and a character split between writes");
+                    "a, and a character split between two Appends");
             Lobs.Writer writer = connection.lobs().create(LobKind.CHARACTER);
             writer.write(new byte[] {'a', (byte) 0xFF});
             IOException refused = assertThrows(IOException.class, writer::flush);

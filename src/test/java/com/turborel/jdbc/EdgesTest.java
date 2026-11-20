@@ -326,4 +326,21 @@ class EdgesTest {
         written.setString("<a/>");
         assertMisuse(written::setCharacterStream);
     }
+
+    /**
+     * Verifies: [DESIGN] D2 isValid of a server that grants no Ping checks by a query that begins
+     * no transaction of the program's: with none active, autocommit off, it is sent to end with
+     * its statement, and autocommit stays off.
+     */
+    @Test
+    void checkingBeginsNoTransaction() throws SQLException {
+        JdbcConnection c =
+                new JdbcConnection(Scripted.after(List.of(), Scripted.complete(false)), "jdbc:turborel://scripted");
+        c.setAutoCommit(false);
+        assertTrue(c.isValid(0));
+        assertFalse(c.getAutoCommit());
+        byte[] sent = Scripted.written(c.session());
+        byte[] check = new com.turborel.jdbc.internal.codec.Request.Query("VALUES 1", true, List.of(), false).encode();
+        assertArrayEquals(check, java.util.Arrays.copyOfRange(sent, sent.length - check.length, sent.length));
+    }
 }

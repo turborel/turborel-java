@@ -50,9 +50,6 @@ final class JdbcConnection implements TurborelConnection {
     /** What a connection checks it answers by, granted no Ping. */
     private static final String CHECK = "VALUES 1";
 
-    /** Milliseconds in a second. */
-    private static final long MILLIS = 1000;
-
     private final Connection session;
     private final String url;
     private final List<JdbcStatement> statements = new ArrayList<>();
@@ -453,7 +450,7 @@ final class JdbcConnection implements TurborelConnection {
             if (session.granted().contains(Capability.PING)) {
                 session.controls().ping();
             } else {
-                session.statements().query(CHECK);
+                checked();
             }
             return true;
         } catch (TurborelException failed) {
@@ -462,6 +459,19 @@ final class JdbcConnection implements TurborelConnection {
             if (limited && !session.isLost()) {
                 session.setReadTimeout(before);
             }
+        }
+    }
+
+    /** The check without Ping: a query that, of no transaction active, ends with its statement. */
+    private void checked() throws TurborelException {
+        boolean on = session.autocommit();
+        if (!session.inTransaction()) {
+            session.setAutocommit(true);
+        }
+        try {
+            session.statements().query(CHECK);
+        } finally {
+            session.setAutocommit(on);
         }
     }
 
@@ -585,10 +595,5 @@ final class JdbcConnection implements TurborelConnection {
     @Override
     public boolean isWrapperFor(@Nullable Class<?> iface) {
         return iface != null && iface.isInstance(this);
-    }
-
-    /** Milliseconds in a second, for a login timeout. */
-    static long millis(int seconds) {
-        return seconds * MILLIS;
     }
 }

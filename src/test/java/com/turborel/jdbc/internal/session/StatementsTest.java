@@ -5,6 +5,7 @@ import static com.turborel.jdbc.internal.session.Script.complete;
 import static com.turborel.jdbc.internal.session.Script.error;
 import static com.turborel.jdbc.internal.session.Script.frame;
 import static com.turborel.jdbc.internal.session.Script.pong;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -249,7 +250,8 @@ class StatementsTest {
     }
 
     /**
-     * Verifies: [PROTOCOL Ping 'G'] a ping is answered by Pong; [CLIENT Controlling the session] it,
+     * Verifies: [PROTOCOL Ping 'G'] a ping is answered by Pong, a header alone ([PROTOCOL Pong
+     * 'G']); [CLIENT Controlling the session] it,
      * a reset and a change of user each need their capability, refused before anything is sent; a
      * reply other than Pong loses the connection.
      */
@@ -273,7 +275,7 @@ class StatementsTest {
 
     /**
      * Verifies: [PROTOCOL ChangeUser 'U'] a change of user answers each Challenge as Hello's do,
-     * and its Ready renews the session: its authorization identifier and cancel key, no transaction
+     * its Answer of the mechanism's bytes, and its Ready renews the session: its authorization identifier and cancel key, no transaction
      * active; refused, the server's Error is given ([CLIENT Controlling the session]).
      */
     @Test
@@ -297,6 +299,40 @@ class StatementsTest {
                         .getSQLState());
         Connection answered = after(List.of(Capability.CHANGE_USER), challenge);
         assertThrows(TurborelException.class, () -> answered.controls().changeUser("bob", new Trust()));
+        byte[] asked = frame('C', new Writer().bytes("c1".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        Script stream = new Script(Script.cat(Script.ready(List.of(Capability.CHANGE_USER)), asked, bob));
+        Connection stepped = Connection.open(stream, "ann", new Trust(), Offer.none());
+        stepped.controls().changeUser("bob", new Echo());
+        assertEquals("BOB", stepped.authorization());
+        byte[] answer = new com.turborel.jdbc.internal.codec.Request.Answer(com.turborel.jdbc.internal.codec.Octets.of(
+                        "a:c1".getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .encode();
+        byte[] sent = stream.written();
+        assertArrayEquals(
+                answer, java.util.Arrays.copyOfRange(sent, sent.length - answer.length, sent.length), "its Answer");
+    }
+
+    /** A mechanism that answers each challenge with it, after {@code a:}. */
+    private static final class Echo implements com.turborel.jdbc.internal.auth.Mechanism {
+        @Override
+        public String name() {
+            return "echo";
+        }
+
+        @Override
+        public com.turborel.jdbc.internal.codec.Octets initial() {
+            return com.turborel.jdbc.internal.codec.Octets.EMPTY;
+        }
+
+        @Override
+        public com.turborel.jdbc.internal.codec.Octets answer(com.turborel.jdbc.internal.codec.Octets challenge) {
+            byte[] given = challenge.toByteArray();
+            byte[] made = new byte[given.length + 2];
+            made[0] = 'a';
+            made[1] = ':';
+            System.arraycopy(given, 0, made, 2, given.length);
+            return com.turborel.jdbc.internal.codec.Octets.of(made);
+        }
     }
 
     /**
@@ -351,8 +387,7 @@ class StatementsTest {
     /**
      * Verifies: [PROTOCOL Errors and notices] SQLSTATE TBR01, SQLCODE -920, a replica that had not
      * applied REPLICATION.READ_AFTER's position in time, is the statement's failure and keeps the
-     * connection, so the program may try again; [PROTOCOL Requests] every request but Hello,
-     * Answer and Cancel is sent only after Ready, the connection made only by its login.
+     * connection, so the program may try again.
      */
     @Test
     void aReplicaBehindFailsTheStatementAlone() throws TurborelException {

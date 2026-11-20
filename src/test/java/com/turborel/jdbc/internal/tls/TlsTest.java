@@ -202,8 +202,9 @@ class TlsTest {
 
     /**
      * Verifies: [CLIENT Connecting] the authorities trusted are a file's, the platform's, or both;
-     * the platform's are SSL_CERT_FILE's and SSL_CERT_DIR's where they are set, else the JDK's own
-     * (RULES.md); none trusted fails.
+     * the platform's are SSL_CERT_FILE's and SSL_CERT_DIR's, a list apart by the platform's
+     * separator, where either is set, as turborel-client's rustls-native-certs reads them, each
+     * that cannot be read passed over; else the JDK's own (RULES.md D13); none trusted fails.
      */
     @Test
     void rootsOfFileAndPlatform() throws TurborelException, IOException, GeneralSecurityException {
@@ -219,8 +220,14 @@ class TlsTest {
                         .getSQLState());
         KeyStore jdk = Roots.of(null, true, none::get);
         assertTrue(jdk.size() > 10, "the JDK's own authorities");
-        KeyStore empty = Roots.of(null, true, Map.of(Roots.SSL_CERT_FILE, "", Roots.SSL_CERT_DIR, "")::get);
-        assertEquals(jdk.size(), empty.size(), "an empty variable is unset");
+        KeyStore empty = Roots.of(null, true, Map.of(Roots.SSL_CERT_DIR, "")::get);
+        assertEquals(jdk.size(), empty.size(), "a directory list of none is unset");
+        Map<String, String> emptyFile = Map.of(Roots.SSL_CERT_FILE, "");
+        assertEquals(
+                "08006",
+                assertThrows(TurborelException.class, () -> Roots.of(null, true, emptyFile::get))
+                        .getSQLState(),
+                "a file named empty is set, and holds none");
         Map<String, String> file =
                 Map.of(Roots.SSL_CERT_FILE, certificates.serverChain().toString());
         assertEquals(3, Roots.of(certificates.authority(), true, file::get).size());
@@ -236,6 +243,12 @@ class TlsTest {
                 "08006",
                 assertThrows(TurborelException.class, () -> Roots.of(null, true, absent::get))
                         .getSQLState());
+        String both = dir.resolve("absent") + java.io.File.pathSeparator + certs;
+        assertEquals(
+                1, Roots.of(null, true, Map.of(Roots.SSL_CERT_DIR, both)::get).size(), "each directory of the list");
+        Map<String, String> badFile =
+                Map.of(Roots.SSL_CERT_FILE, dir.resolve("absent.pem").toString(), Roots.SSL_CERT_DIR, certs.toString());
+        assertEquals(1, Roots.of(null, true, badFile::get).size(), "a file not read is passed over");
     }
 
     /** A TLS server on loopback, presenting the server's certificate, and what it was given. */

@@ -297,4 +297,48 @@ class LiveStatementsTest {
             connection.terminate();
         }
     }
+
+    /**
+     * Verifies: [PROTOCOL Query 'Q'] several statements as one Query under autocommit, {@code ends}
+     * applying to each: each ends its own transaction, so the first two are kept though the third
+     * fails, and none is active after.
+     */
+    @Test
+    void endsAppliesToEachStatement() throws TurborelException, IOException {
+        try (Connection connection = connected()) {
+            connection.setAutocommit(true);
+            Ran ran = connection
+                    .controls()
+                    .queryMany(
+                            "CREATE TABLE MANY_ENDS (N INTEGER); INSERT INTO MANY_ENDS VALUES (1); SELECT * FROM NOPE");
+            assertNotNull(ran.failure());
+            assertEquals(2, ran.outcomes().size());
+            assertFalse(connection.inTransaction());
+            assertEquals(
+                    List.of(List.of(integer(1))), rows(connection.statements().query("SELECT N FROM MANY_ENDS")));
+        }
+    }
+
+    /**
+     * Verifies: [PROTOCOL Prepare 'P'] a Prepare of a number a statement has replaces that one
+     * ([PROTOCOL Deallocate 'D']); a Deallocate of a number no statement has fails (SQLSTATE
+     * 26000), the connection kept.
+     */
+    @Test
+    void aNumberIsReplacedOrNone() throws TurborelException, IOException {
+        try (Connection connection = connected()) {
+            Statements statements = connection.statements();
+            Statement one = statements.prepare("VALUES 1");
+            connection.send(new com.turborel.jdbc.internal.codec.Request.Prepare(one.number(), "VALUES 2"));
+            assertTrue(connection.receive() instanceof com.turborel.jdbc.internal.codec.Reply.Prepared);
+            assertEquals(List.of(List.of(integer(2))), rows(statements.execute(one, List.of())), "replaced");
+            Statement none = new Statement(4_000_000, List.of(), List.of());
+            assertEquals(
+                    "26000",
+                    assertThrows(TurborelException.class, () -> statements.deallocate(none))
+                            .getSQLState());
+            assertFalse(connection.isLost());
+            statements.query("ROLLBACK");
+        }
+    }
 }

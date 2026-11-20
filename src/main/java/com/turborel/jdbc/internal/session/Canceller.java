@@ -25,6 +25,11 @@ public final class Canceller {
     private final Target target;
     private final CancelKey key;
 
+    /** The key it cancels by, which no one else is shown: for the session's tests to compare. */
+    CancelKey key() {
+        return key;
+    }
+
     Canceller(Target target, CancelKey key) {
         this.target = target;
         this.key = key;

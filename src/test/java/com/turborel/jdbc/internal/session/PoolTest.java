@@ -72,7 +72,8 @@ class PoolTest {
 
     /**
      * Verifies: [CLIENT Pools] a get waiting for a connection takes the one given back while it
-     * waits; a wait interrupted fails (SQLSTATE 08001), the thread's interrupt kept.
+     * waits; a wait interrupted fails (SQLSTATE 08001), the thread's interrupt kept; a pool's
+     * defaults are 10 connections, 10 idle, 10 minutes idle, an hour's life and 30 seconds' wait.
      */
     @Test
     void aWaitTakesTheConnectionGivenBack() throws TurborelException, InterruptedException {
@@ -99,5 +100,11 @@ class PoolTest {
         Pool other = new Pool(of(after(List.of())), PoolConfig.defaults());
         assertNotSame(pool.config(), other.config());
         assertEquals(PoolConfig.defaults(), other.config());
+        PoolConfig defaults = PoolConfig.defaults();
+        assertEquals(10, defaults.max(), "at most 10 connections");
+        assertEquals(10, defaults.maxIdle(), "at most 10 idle");
+        assertEquals(java.time.Duration.ofMinutes(10), defaults.idleTimeout());
+        assertEquals(java.time.Duration.ofHours(1), defaults.maxLifetime());
+        assertEquals(java.time.Duration.ofSeconds(30), defaults.maxWait());
     }
 }

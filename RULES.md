@@ -473,6 +473,18 @@ behaves alike:
   the code the server would fail the connection with, SQLCODE -919 and
   SQLSTATE 08006, and the connection kept. turborel-client sends them,
   and the server then fails the connection.
+- A named pipe is opened as the JDK opens a file, which gives no
+  Windows error code and sets no security quality of service. So a pipe
+  whose every instance is busy is told by the system's message, which
+  says "busy" in English, and is tried again until the connect timeout,
+  where turborel-client tells it by ERROR_PIPE_BUSY; and the server is
+  not limited to identifying the client, where turborel-client asks for
+  SECURITY_IDENTIFICATION. Either needs native code (D1).
+- Channel binding `require` with settings that can bind nothing is
+  refused before any connection is made, SQLSTATE 28000, as Settings,
+  Pipelines and Pools says (`[CLIENT TLS by mode]`). turborel-client
+  connects first and refuses after, so of a server it cannot reach it
+  gives 08006 instead.
 
 ### This driver's own
 
@@ -541,7 +553,10 @@ material, JDK 25 and later, and by the server's certificate before it.
 
 turborel-client takes the platform's authorities from the operating
 system's store, or from the files SSL_CERT_FILE and SSL_CERT_DIR name if
-either is set. The driver takes the same two variables the same way;
+either is set. The driver takes the same two variables the same way, as
+the crate rustls-native-certs reads them: SSL_CERT_DIR a list of
+directories apart by the platform's separator, each file or directory
+that cannot be read passed over, and none at all trusted a failure;
 without them, it takes the JDK's own trusted authorities: its `cacerts`,
 or the store `javax.net.ssl.trustStore` and `javax.net.ssl.trustStoreType`
 name. For a Java program those are the platform's.
