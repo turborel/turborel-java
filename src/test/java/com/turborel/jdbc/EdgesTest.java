@@ -1,7 +1,9 @@
 package com.turborel.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -267,5 +269,61 @@ class EdgesTest {
             assertMisuse(s::getResultSet);
             assertMisuse(rs::next);
         }
+    }
+
+    /**
+     * Verifies: [DESIGN] D2 a connection of a stream the program gave, told no status: its
+     * isolation READ COMMITTED, its version the Ready's; autocommit turned on outside a
+     * transaction sends nothing; a statement of no count told completes with 0; cancel with no
+     * canceller does nothing; a value read as a class it is none of is refused (22018).
+     */
+    @Test
+    void aConnectionToldLittle() throws SQLException {
+        JdbcConnection c = connection();
+        assertEquals(java.sql.Connection.TRANSACTION_READ_COMMITTED, c.getTransactionIsolation());
+        assertEquals("turborel 0.0.0 (alpha)", c.getMetaData().getDatabaseProductVersion());
+        c.setAutoCommit(false);
+        c.setAutoCommit(true);
+        c.setAutoCommit(true);
+        assertTrue(c.getAutoCommit());
+        try (JdbcStatement s = (JdbcStatement) c.createStatement()) {
+            s.outcome(
+                    new com.turborel.jdbc.internal.session.Outcome.Done(new com.turborel.jdbc.internal.codec.Completed(
+                            0,
+                            "00000",
+                            false,
+                            new com.turborel.jdbc.internal.codec.Completed.Fields(
+                                    null, false, null, List.of(), List.of(), null))));
+            assertEquals(0, s.getUpdateCount());
+            s.cancel();
+        }
+        ResultSet rs = new JdbcResultSet(
+                null, c, List.of(new Column("A", TEXT, false)), Rows.of(List.of(List.of(new Value.Text("x")))));
+        assertTrue(rs.next());
+        assertEquals(
+                "22018",
+                assertThrows(SQLException.class, () -> rs.getObject(1, java.util.Map.class))
+                        .getSQLState());
+    }
+
+    /**
+     * Verifies: [DESIGN] D2 an SQLXML is sent as text to a character parameter, and octets of a
+     * binary string as they are; an array's array elements, of no element type known, are read as
+     * arrays; an SQLXML written is written no more.
+     */
+    @Test
+    void objectsAreSentAsTheyAre() throws SQLException {
+        assertEquals("<a/>", ToValue.text(new JdbcSQLXML("<a/>")));
+        byte[] octets = {1, 2};
+        assertArrayEquals(
+                octets,
+                ToValue.bytes(new com.turborel.jdbc.internal.codec.OctetValue.Binary(
+                        com.turborel.jdbc.internal.codec.Octets.of(octets))));
+        java.sql.Array nested =
+                new JdbcArray((Column) null, List.of(new Value.Array(List.of(new Value.Text("x")))), connection());
+        assertInstanceOf(java.sql.Array.class, ((Object[]) nested.getArray())[0]);
+        JdbcSQLXML written = new JdbcSQLXML();
+        written.setString("<a/>");
+        assertMisuse(written::setCharacterStream);
     }
 }

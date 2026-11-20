@@ -519,10 +519,21 @@ class LiveJdbcValuesTest {
         }
     }
 
+    /** Reads a Blob whole by its locator, and sends it and a Clob back by theirs. */
+    private static void sentBack(Connection c, Blob blob, Clob clob) throws SQLException, IOException {
+        assertEquals(BIG, blob.getBinaryStream().readAllBytes().length, "read by its locator");
+        try (PreparedStatement again = c.prepareStatement("INSERT INTO JDBC_LOCATORS VALUES (?, ?)")) {
+            again.setBlob(1, blob);
+            again.setClob(2, clob);
+            assertEquals(1, again.executeUpdate(), "sent back by their locators");
+        }
+    }
+
     /**
      * Verifies: [DESIGN] D2 a large object of a row is read through its locator by range, by
-     * stream and by search, past its end giving what is there; it is changed by no setter
-     * (SQLSTATE 0A000); freed it is refused.
+     * stream and by search, past its end giving what is there, whole by its stream; it is
+     * changed by no setter (SQLSTATE 0A000), and sent back as a parameter by its locator; freed
+     * it is refused.
      */
     @Test
     void largeObjectsByLocator() throws SQLException, IOException {
@@ -560,6 +571,7 @@ class LiveJdbcValuesTest {
                         "0A000",
                         assertThrows(SQLException.class, () -> clob.setString(1, "z"))
                                 .getSQLState());
+                sentBack(c, blob, clob);
                 blob.free();
                 clob.free();
                 assertEquals(
