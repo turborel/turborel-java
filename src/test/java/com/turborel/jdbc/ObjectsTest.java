@@ -218,9 +218,9 @@ class ObjectsTest {
     void theDriverTakesItsUrls() throws SQLException {
         Driver driver = new Driver();
         assertTrue(driver.acceptsURL("jdbc:turborel://ann@db"));
-        assertFalse(driver.acceptsURL("jdbc:postgresql://db"));
+        assertFalse(driver.acceptsURL("jdbc:other://db"));
         assertFalse(driver.acceptsURL(null));
-        assertNull(driver.connect("jdbc:postgresql://db", new Properties()));
+        assertNull(driver.connect("jdbc:other://db", new Properties()));
         Properties given = new Properties();
         given.setProperty("tls_mode", "verify-full");
         DriverPropertyInfo[] info = driver.getPropertyInfo("jdbc:turborel://", given);

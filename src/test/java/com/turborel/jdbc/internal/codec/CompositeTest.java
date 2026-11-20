@@ -116,8 +116,8 @@ class CompositeTest {
         Attribute.write(none, List.of());
         assertArrayEquals(new byte[0], none.toByteArray());
         Writer one = new Writer();
-        Attribute.write(one, List.of(new Attribute("application", "psql")));
-        assertArrayEquals(cat(u8(1), u32(1), str("application"), str("psql")), one.toByteArray());
+        Attribute.write(one, List.of(new Attribute("application", "app")));
+        assertArrayEquals(cat(u8(1), u32(1), str("application"), str("app")), one.toByteArray());
         List<Attribute> most = new ArrayList<>();
         for (int i = 0; i < Attribute.MAX_ATTRIBUTES; i++) {
             most.add(new Attribute("n".repeat(Attribute.MAX_NAME), "v".repeat(Attribute.MAX_VALUE)));
