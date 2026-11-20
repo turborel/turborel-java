@@ -42,7 +42,7 @@ before writing code, and cite it by its heading, as in
 ```
 git config core.hooksPath .githooks          # ./gradlew check before each commit (once per clone)
 ./gradlew check                              # every check a change must pass
-./gradlew jacocoTestCoverageVerification     # coverage and its floor alone
+./gradlew jacocoTestCoverageVerification     # coverage and its floor, over every test
 ./gradlew spotlessApply                      # format the sources
 ./gradlew test                               # the tests alone, on JDK 17
 ./gradlew test -PtestJava=21                 # the tests on another JDK

@@ -219,8 +219,10 @@ val traceability = tasks.register<TraceabilityTask>("traceability") {
     stamp = layout.buildDirectory.file("traceability/ok")
 }
 
+// The coverage floor is not among them: it is measured over every test, the live tests too
+// (RULES.md D7), so by `jacocoTestCoverageVerification` with a live server named.
 tasks.check {
-    dependsOn(traceability, errorProneMain, errorProneTest, tasks.javadoc, tasks.jacocoTestCoverageVerification)
+    dependsOn(traceability, errorProneMain, errorProneTest, tasks.javadoc)
 }
 
 tasks.withType<Jar>().configureEach {

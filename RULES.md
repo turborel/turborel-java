@@ -343,7 +343,9 @@ first failure: the formatter, the linters, the type checker where the
 language has one, the checks tool's own rules (lengths a linter does not
 measure, citations and their targets, open-work markers, the manual's
 titles, `[Contents](README.md)` lines and links), and every test.
-`./gradlew jacocoTestCoverageVerification` measures coverage and holds it to its floor (D7).
+`./gradlew jacocoTestCoverageVerification` measures coverage and holds it to its floor (D7),
+over every test: the live tests run only where `TURBOREL_TEST_SERVER`
+names a server, so it is run with one named.
 
 `.githooks/pre-commit` hands over to the same command. It is a script
 only because git runs hooks as scripts. CI runs it on Linux, macOS and
@@ -357,7 +359,8 @@ formatter, Spotless with palantir-java-format; Checkstyle, for the rules
 a linter can check; SpotBugs, at its most effort and lowest threshold;
 Javadoc with `-Werror`; the JUnit Jupiter tests; the checks tool's tasks
 in `buildSrc/`, `traceability`, of every citation and the manual's
-layout; and the coverage floor. The hook runs it all. Java's type
+layout. The hook runs it all; the coverage floor is a command of its
+own, above. Java's type
 checker is javac, with NullAway over JSpecify's `@NullMarked`.
 
 | Tool | What for | License |
