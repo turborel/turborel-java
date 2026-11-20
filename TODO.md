@@ -56,5 +56,10 @@ Nothing is open. Every row M6 named is done.
 
 - Every row of CONFORMANCE.md checked against turborel-client and the
   spec, the coverage floor held (RULES.md D7), and this file empty.
-- Once Turborel keeps a file of sample frames beside the spec, every
-  frame of it decoded, at a pinned commit.
+- The sample frames: P-FRAMES-1 to P-FRAMES-4, every frame of
+  `doc/client/05-protocol-frames.tsv` decoded or encoded as it says, at a
+  pinned commit of Turborel.
+- A value the client cannot take fails its request alone, the rest of
+  its replies read past and the connection kept: P-FIELD-10, C-RUN-9.
+- Terminate reading past a Notice or Status to its Error: C-CONN-14.
+- A stream of the program's own bounded within Timeouts: C-TIME-7.

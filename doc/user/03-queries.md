@@ -21,13 +21,14 @@ COMMIT;
 ## A query's rows
 
 `query` runs one statement. Of a query it gives `Outcome.Rows`, its
-columns, each of a name and a data type, and its rows, each a list of
-values, one for each column.
+columns, each of a name, a data type and the type it was declared with,
+and its rows, each a list of values, one for each column.
+`typeWritten` gives a column's declared type as SQL writes it.
 
 ```java
 Outcome.Rows rows = (Outcome.Rows) conn.statements().query("SELECT ID, NAME, SALARY FROM STAFF ORDER BY ID");
 for (Column column : rows.columns()) {
-    System.out.println(column.name() + " " + column.type());
+    System.out.println(column.name() + " " + column.typeWritten());
 }
 for (List<Value> row : rows.rows()) {
     System.out.println(row);
@@ -35,9 +36,9 @@ for (List<Value> row : rows.rows()) {
 ```
 
 ```
-ID ExactType[precision=10, scale=0]
-NAME CharacterType[varying=true, length=20, units=CHARACTERS]
-SALARY ExactType[precision=8, scale=2]
+ID INTEGER
+NAME CHARACTER VARYING(20)
+SALARY DECIMAL(8,2)
 [Exact[units=1, scale=0], Text[text=Ada], Exact[units=520000, scale=2]]
 [Exact[units=2, scale=0], Text[text=Grace], Exact[units=610050, scale=2]]
 ```

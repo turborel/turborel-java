@@ -12,7 +12,7 @@ public final class ReplyWriter {
     private ReplyWriter() {}
 
     /**
-     * A Description of columns.
+     * A Description of columns, their declared types in its tail if any has one.
      *
      * @param columns the columns
      * @return its frame
@@ -29,7 +29,24 @@ public final class ReplyWriter {
             type(w, column.type());
             w.flag(column.notNull());
         }
+        declared(w, columns);
         return Frames.frame(Reply.DESCRIPTION, w.toByteArray());
+    }
+
+    /**
+     * Writes the declared type of each column, tail 19, if any column has one; one without is
+     * written as its type says ([PROTOCOL Declared types]).
+     */
+    private static void declared(Writer w, List<Column> columns) throws TurborelException {
+        if (columns.stream().allMatch(c -> c.declared() == null)) {
+            return;
+        }
+        w.u8(Tail.DECLARED).u32(columns.size());
+        for (Column column : columns) {
+            Declared told = column.declared();
+            Declared each = told == null ? Declared.of(column.type()) : told;
+            w.string(each.name()).string(each.written());
+        }
     }
 
     /**

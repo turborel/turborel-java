@@ -36,8 +36,8 @@ public final class ReplyCodec {
         return switch (kind) {
             case Reply.CHALLENGE -> new Reply.Challenge(r.octets());
             case Reply.READY -> new Reply.Ready(r.string(), CancelKey.read(r), r.strings(), r.string());
-            case Reply.PREPARED -> new Reply.Prepared(r.u32(), r.list(Parameter::read), r.list(Column::read));
-            case Reply.DESCRIPTION -> new Reply.Description(r.list(Column::read));
+            case Reply.PREPARED -> new Reply.Prepared(r.u32(), r.list(Parameter::read), Column.readAll(r));
+            case Reply.DESCRIPTION -> new Reply.Description(Column.readAll(r));
             case Reply.ROWS -> new Reply.Rows(r.list(ValueCodec::readRow));
             case Reply.SUSPENDED -> new Reply.Suspended();
             case Reply.COMPLETE -> new Reply.Complete(Completed.read(r));

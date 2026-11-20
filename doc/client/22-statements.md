@@ -4,8 +4,8 @@
 
 ## NAME
 
-`Statements`, `Statement`, `Outcome`, `Batch`, `Sink`, `Streamed`,
-`Told`, and of `Controls` `queryMany` and `setQueryAttributes`: the
+`Statements`, `Statement`, `Column`, `Declared`, `Outcome`, `Batch`,
+`Sink`, `Streamed`, `Told`, and of `Controls` `queryMany` and `setQueryAttributes`: the
 low-level client's statements, as turborel-client gives them
 
 ## SYNOPSIS
@@ -31,6 +31,12 @@ public final class Statements {                     // Connection.statements()
 }
 
 public record Statement(long number, List<Parameter> parameters, List<Column> columns) {}
+
+// com.turborel.jdbc.internal.codec
+public record Column(@Nullable String name, DataType type, boolean notNull, @Nullable Declared declared) {
+    public String typeWritten();
+}
+public record Declared(String name, String written) {}
 public sealed interface Outcome {
     record Rows(List<Column> columns, List<List<Value>> rows) implements Outcome {}
     record Done(Completed completed) implements Outcome {}
@@ -96,6 +102,17 @@ each a `Cursor` of a number of the program's; 0 is the one a statement
 has without it. Under autocommit, granted `fetch-ends`, a cursor's
 transaction ends as it does.
 
+**Declared types.** A column's `type` is what its values' tag says, so
+SMALLINT, INTEGER, BIGINT, DECIMAL and NUMERIC are all an exact number
+of a precision and scale. Granted `declared-types`, which connecting
+asks for, a column of a Prepared or Description also has `declared`,
+the type it was declared with: its `name`, as the Information Schema's
+DATA_TYPE gives it, INTEGER, DECIMAL or USER-DEFINED of a distinct type,
+and its type as SQL `written`, INTEGER, DECIMAL(9,2), a distinct type's
+schema and name, or INTEGER ARRAY[3]. `typeWritten` gives the declared
+type where it was told, else the type its tag says, so INTEGER is then
+NUMERIC(10,0). A parameter has no declared type.
+
 **Describe.** Granted `describe`, `describe` gives a statement's
 parameters and columns as they are now, or an open cursor's columns.
 
@@ -138,7 +155,7 @@ A query's rows:
 ```java
 Outcome.Rows rows = (Outcome.Rows) conn.statements().query("SELECT ID, NAME, SALARY FROM STAFF ORDER BY ID");
 for (Column column : rows.columns()) {
-    System.out.println(column.name() + " " + column.type());
+    System.out.println(column.name() + " " + column.typeWritten());
 }
 for (List<Value> row : rows.rows()) {
     System.out.println(row);
@@ -146,9 +163,9 @@ for (List<Value> row : rows.rows()) {
 ```
 
 ```
-ID ExactType[precision=10, scale=0]
-NAME CharacterType[varying=true, length=20, units=CHARACTERS]
-SALARY ExactType[precision=8, scale=2]
+ID INTEGER
+NAME CHARACTER VARYING(20)
+SALARY DECIMAL(8,2)
 [Exact[units=1, scale=0], Text[text=Ada], Exact[units=520000, scale=2]]
 [Exact[units=2, scale=0], Text[text=Grace], Exact[units=610050, scale=2]]
 ```

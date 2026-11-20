@@ -44,6 +44,9 @@ public final class Capability {
     /** A Complete carries its statement's conditions, in place of Notices. */
     public static final String CONDITIONS = "conditions";
 
+    /** Prepared and Description carry each column's declared type, tail 19. */
+    public static final String DECLARED_TYPES = "declared-types";
+
     /** Every capability of version 1, in the table's order. */
     public static final List<String> ALL = List.of(
             NOTICES,
@@ -63,7 +66,8 @@ public final class Capability {
             ROW_COUNTS,
             GENERATED_VALUES,
             FETCH_ENDS,
-            CONDITIONS);
+            CONDITIONS,
+            DECLARED_TYPES);
 
     private Capability() {}
 }

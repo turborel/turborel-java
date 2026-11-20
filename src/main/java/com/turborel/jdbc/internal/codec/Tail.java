@@ -31,6 +31,9 @@ public final class Tail {
     /** Time, on Complete. */
     public static final int TIME = 18;
 
+    /** Tag 19, the columns' declared types, of a Prepared and a Description. */
+    public static final int DECLARED = 19;
+
     /** What {@link #next} gives at the end of the body. */
     public static final int END = -1;
 
@@ -41,6 +44,9 @@ public final class Tail {
 
     /** The tags of a Complete. */
     static final int[] COMPLETE = {POSITION, MORE, ROWS, GENERATED, CONDITIONS, TIME};
+
+    /** The tags a Prepared's and a Description's tail may carry. */
+    static final int[] COLUMNS = {DECLARED};
 
     private final int[] taken;
     private int last;
