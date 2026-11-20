@@ -39,6 +39,29 @@ class ValueTextTest {
         assertEquals("1E0", ValueText.of(new Value.Approximate(1.0)));
         assertEquals("-2.5E-7", ValueText.of(new Value.Approximate(-2.5e-7)));
         assertEquals("0E0", ValueText.of(new Value.Approximate(0.0)));
+        // The shortest digits, as Rust's Display finds them, where JDK 17's Double.toString is not
+        // the shortest: 1E23, 2E23 and 5E-324; the rest as Python's repr, which finds the same.
+        String[][] rust = {
+            {"1.0E23", "1E23"},
+            {"2.0E23", "2E23"},
+            {"4.9E-324", "5E-324"},
+            {"2.0E-3", "2E-3"},
+            {"2.2250738585072014E-308", "2.2250738585072014E-308"},
+            {"1.7976931348623157E308", "1.7976931348623157E308"},
+            {"0.30000000000000004", "3.0000000000000004E-1"},
+            {"0.3333333333333333", "3.333333333333333E-1"},
+            {"4.35", "4.35E0"},
+            {"100", "1E2"},
+            {"1.2345678901234568E17", "1.2345678901234568E17"},
+            {"1.0E-5", "1E-5"},
+            {"2.7216092808335446E276", "2.7216092808335446E276"},
+            {"3.035766360112293E-65", "3.035766360112293E-65"},
+            {"6.665830898196862E-279", "6.665830898196862E-279"},
+            {"2.3558459513947972E198", "2.3558459513947972E198"}
+        };
+        for (String[] each : rust) {
+            assertEquals(each[1], ValueText.of(new Value.Approximate(Double.parseDouble(each[0]))), each[0]);
+        }
         assertEquals("-0E0", ValueText.of(new Value.Approximate(-0.0)));
         assertEquals("NaN", ValueText.of(new Value.Approximate(Double.NaN)));
         assertEquals("inf", ValueText.of(new Value.Approximate(Double.POSITIVE_INFINITY)));

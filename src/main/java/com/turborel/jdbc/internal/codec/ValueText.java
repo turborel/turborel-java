@@ -3,6 +3,8 @@ package com.turborel.jdbc.internal.codec;
 import com.turborel.jdbc.TurborelException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.HexFormat;
@@ -18,6 +20,9 @@ import java.util.List;
 public final class ValueText {
     /** The most scale written plainly: an exact number's largest. */
     private static final long MAX_PLAIN_SCALE = 18;
+
+    /** The most significant digits a double needs to read back as itself. */
+    private static final int MOST_DIGITS = 17;
 
     /** The least adjusted exponent of a decimal floating point number written plainly. */
     private static final long PLAIN_LEAST = -6;
@@ -174,11 +179,42 @@ public final class ValueText {
         if (x == 0) {
             return sign + "0E0";
         }
-        BigDecimal shortest = new BigDecimal(Double.toString(Math.abs(x))).stripTrailingZeros();
+        BigDecimal shortest = shortest(Math.abs(x)).stripTrailingZeros();
         String digits = shortest.unscaledValue().toString();
         long exponent = digits.length() - 1L - shortest.scale();
         String rest = digits.substring(1);
         return sign + digits.charAt(0) + (rest.isEmpty() ? "" : "." + rest) + "E" + exponent;
+    }
+
+    /**
+     * The shortest decimal that reads back as {@code x}, of those the closest to it, as Rust's
+     * {@code Display} finds it, whatever the JDK: its {@code Double.toString} is not the shortest
+     * before JDK 19, as of 1E23. Of each count of digits from 1 to 17, the nearest decimal and the
+     * two beside it are tried.
+     */
+    static BigDecimal shortest(double x) {
+        BigDecimal exact = new BigDecimal(x);
+        for (int digits = 1; digits < MOST_DIGITS; digits++) {
+            BigDecimal nearest = exact.round(new MathContext(digits, RoundingMode.HALF_EVEN));
+            BigDecimal unit = BigDecimal.ONE.scaleByPowerOfTen(-nearest.scale());
+            BigDecimal best = null;
+            for (BigDecimal candidate : List.of(nearest, nearest.subtract(unit), nearest.add(unit))) {
+                if (candidate.signum() > 0
+                        && Double.doubleToLongBits(candidate.doubleValue()) == Double.doubleToLongBits(x)
+                        && (best == null
+                                || candidate
+                                                .subtract(exact)
+                                                .abs()
+                                                .compareTo(best.subtract(exact).abs())
+                                        < 0)) {
+                    best = candidate;
+                }
+            }
+            if (best != null) {
+                return best;
+            }
+        }
+        return exact.round(new MathContext(MOST_DIGITS, RoundingMode.HALF_EVEN));
     }
 
     /** A decimal floating point number plainly within its range of plain writing, else with E. */
