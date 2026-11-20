@@ -43,7 +43,8 @@ jobs:
       # Disabled: the owner enables this step, by removing its `if`, when the
       # drivers are published, gives the job `contents: write` so it can push
       # the tag, and first gives the repository the three secrets it names.
-      # It tags the release `v` and its number, signs the staged files, and
+      # It tags the release with exactly the tag Turborel's own release uses,
+      # `v` and the number, on this commit, signs the staged files, and
       # uploads them to the Sonatype Central Portal, to be released there by
       # hand (VERSIONING.md).
       - name: Tag, sign and upload to Maven Central

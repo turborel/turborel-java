@@ -1,10 +1,15 @@
 // The manual's layout, as turborel.com's documentation site reads doc/
-// (RULES.md R-DOC-7), and the relative links of every document.
+// (RULES.md R-DOC-7): titles, contents lines, volumes listing their pages,
+// user/01-installing.md, no images, and relative links that resolve, those
+// to this repository's files outside doc/ too, which the site points at
+// GitHub at the same tag.
 
 import java.io.File
 
 private val LINK = Regex("""\]\(([^)\s]+)\)""")
+private val IMAGE = Regex("""!\[|<img\b""")
 private const val CONTENTS = "[Contents](README.md)"
+private const val INSTALLING = "user/01-installing.md"
 
 /** What is wrong with the manual's layout under `doc`, and with the links of `documents`. */
 fun manualProblems(root: File, doc: File, documents: List<File>): List<String> {
@@ -14,7 +19,12 @@ fun manualProblems(root: File, doc: File, documents: List<File>): List<String> {
     doc.walkTopDown().filter { it.isDirectory && it != doc }.forEach { volume ->
         problems += volumeProblems(root, volume)
     }
-    (documents + pages).distinct().forEach { file -> problems += linkProblems(root, doc, file) }
+    if (!File(doc, INSTALLING).isFile) {
+        problems += "doc/$INSTALLING is not there"
+    }
+    pages.filter { IMAGE.containsMatchIn(it.readText()) }
+        .forEach { problems += "${it.relativeTo(root).invariantSeparatorsPath} holds an image" }
+    (documents + pages).distinct().forEach { file -> problems += linkProblems(root, file) }
     return problems
 }
 
@@ -44,18 +54,11 @@ private fun volumeProblems(root: File, volume: File): List<String> {
         .filter { it.name !in listed }.map { "$name/README.md does not list ${it.name}" }
 }
 
-/** A relative link resolves; one in doc/ stays in doc/, a link out of it being a full URL. */
-private fun linkProblems(root: File, doc: File, file: File): List<String> {
+/** Every relative link resolves. */
+private fun linkProblems(root: File, file: File): List<String> {
     val name = file.relativeTo(root).invariantSeparatorsPath
-    val inDoc = file.canonicalPath.startsWith(doc.canonicalPath + File.separator)
     return LINK.findAll(file.readText()).map { it.groupValues[1] }
         .filterNot { Regex("^[a-z]+:").containsMatchIn(it) || it.startsWith("#") }
-        .mapNotNull { link ->
-            val target = File(file.parentFile, link.substringBefore('#')).canonicalFile
-            when {
-                !target.exists() -> "$name links to $link, which is not there"
-                inDoc && !target.path.startsWith(doc.canonicalPath) -> "$name links out of doc/ to $link, not by a full URL"
-                else -> null
-            }
-        }.toList()
+        .filterNot { File(file.parentFile, it.substringBefore('#')).exists() }
+        .map { "$name links to $it, which is not there" }.toList()
 }

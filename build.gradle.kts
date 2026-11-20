@@ -237,7 +237,8 @@ publishing {
             pom {
                 name = "turborel-jdbc"
                 description = project.description
-                url = "https://github.com/turborel/turborel-java"
+                // The driver's manual, on turborel.com.
+                url = "https://turborel.com/docs/drivers/java/"
                 inceptionYear = "2026"
                 licenses {
                     license {
