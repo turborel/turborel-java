@@ -64,6 +64,10 @@ rename with a change of behaviour.
 Tests come with the change, at the lowest level that shows it (R-TEST-1):
 codec tests against the bytes the spec gives, tests of a layer over a
 stream the test controls, and live tests against a server on loopback.
+The live tests run where `TURBOREL_TEST_SERVER` names the server, a
+`turboreld` binary or `docker:` and an image, as CI names
+`ghcr.io/turborel/turborel:nightly` on Linux; the server is set up as
+`test/server/live.settings` says, and the coverage floor counts them.
 Cover normal cases, boundaries, and robustness cases with the exact
 SQLCODE and SQLSTATE expected (R-TEST-2). Each test cites what it
 verifies, by its Javadoc comment, beginning `Verifies:` (R-TRACE-1). A fixed defect gets a test that

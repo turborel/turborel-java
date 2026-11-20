@@ -2,6 +2,11 @@
 # driver runs on (R-PLAT-1) and each Java release it supports (D3), plus the
 # coverage floor (R-COV-1). JDK 17 compiles the library, JDK 21 runs Error
 # Prone and Checkstyle (D10), and the matrix's JDK runs the tests.
+#
+# The live tests (R-TEST-8) run on Linux, against the nightly image, set up
+# as test/server/live.settings says. macOS and Windows skip them: GitHub's
+# runners for them have no Linux container runtime to run the image in, and
+# Turborel publishes no turboreld for them to run instead.
 name: verify
 
 # A pull request is checked once, through pull_request, and main again once
@@ -29,6 +34,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         java: [17, 21, 25]
     runs-on: ${{ matrix.os }}
+    env:
+      TURBOREL_TEST_SERVER: ${{ matrix.os == 'ubuntu-latest' && 'docker:ghcr.io/turborel/turborel:nightly' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -53,6 +60,9 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Gradle, its wrapper validated
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: The live tests' server, pulled
+        if: env.TURBOREL_TEST_SERVER != ''
+        run: docker pull ghcr.io/turborel/turborel:nightly
       - name: Every check
         shell: bash
         timeout-minutes: 30
@@ -62,6 +72,8 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    env:
+      TURBOREL_TEST_SERVER: docker:ghcr.io/turborel/turborel:nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -74,7 +86,9 @@ jobs:
           java-version: 17
       - name: Gradle, its wrapper validated
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-      - name: Coverage and its floor
+      - name: The live tests' server, pulled
+        run: docker pull ghcr.io/turborel/turborel:nightly
+      - name: Coverage and its floor, over every test
         run: >-
           ./gradlew jacocoTestReport jacocoTestCoverageVerification
           "-Dorg.gradle.java.installations.paths=${{ steps.jdk17.outputs.path }}"

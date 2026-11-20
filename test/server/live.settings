@@ -1,0 +1,17 @@
+# The live tests' server (RULES.md R-TEST-8): the settings it is started
+# with, one NAME=VALUE a line, by src/test/java/com/turborel/jdbc/testing/
+# LiveServer.java. It runs in memory, its owner ANN of a password fed on
+# its standard input; {certs} is the directory of test certificates made as
+# the tests run, and {socket} its Unix socket, so no key is ever committed.
+SERVER.HOST=127.0.0.1
+SERVER.PORT=17434
+SERVER.SOCKET={socket}
+SERVER.TLS=ON
+SERVER.TLS_CERTIFICATE={certs}/server-chain.pem
+SERVER.TLS_KEY={certs}/server-key.pem
+SERVER.TLS_CLIENT_CA={certs}/ca.pem
+SERVER.TRUST_LOCAL=ON
+SERVER.SCRAM_WITHOUT_TLS=ON
+SERVER.LOGIN_DELAY_MS=0
+SERVER.SHUTDOWN_TIMEOUT_MS=100
+SERVER.PASSWORD_ITERATIONS=10000

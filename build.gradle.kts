@@ -126,6 +126,10 @@ tasks.test {
     javaLauncher = javaToolchains.launcherFor {
         languageVersion = testJava.map { JavaLanguageVersion.of(it) }
     }
+    // The live tests run only where TURBOREL_TEST_SERVER names a server (RULES.md R-TEST-8): a
+    // change of it, or of the server's settings, runs the tests again.
+    inputs.property("liveServer", providers.environmentVariable("TURBOREL_TEST_SERVER").orElse(""))
+    inputs.file(layout.projectDirectory.file("test/server/live.settings"))
     finalizedBy(tasks.jacocoTestReport)
 }
 

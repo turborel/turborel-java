@@ -24,6 +24,42 @@ public record Failure(
         @Nullable Long position,
         boolean active,
         @Nullable Diagnostics diagnostics) {
+    /** The SQLSTATE class of a connection exception. */
+    private static final String CONNECTION_CLASS = "08";
+
+    /** Connection does not exist, which names another connection and leaves this one. */
+    private static final String NO_CONNECTION = "08003";
+
+    /** The SQLSTATE class of invalid authorization. */
+    private static final String AUTHORIZATION_CLASS = "28";
+
+    /**
+     * Whether the connection it came on is lost ([PROTOCOL Error 'E']): a connection exception,
+     * SQLSTATE class 08 but 08003, or credentials refused as it is made, class 28 of a connection
+     * exception's SQLCODE; after either the server closes it.
+     *
+     * @return whether it ends the connection
+     */
+    public boolean endsConnection() {
+        boolean connecting = sqlcode == Broken.SQLCODE;
+        return (sqlstate.startsWith(CONNECTION_CLASS) && !sqlstate.equals(NO_CONNECTION))
+                || (connecting && sqlstate.startsWith(AUTHORIZATION_CLASS));
+    }
+
+    /**
+     * The failure as the driver's error, carrying all of it (RULES.md D9).
+     *
+     * @return the error
+     */
+    public TurborelException toException() {
+        java.util.Map<String, String> told = new java.util.LinkedHashMap<>();
+        if (diagnostics != null) {
+            diagnostics.fields().forEach((field, text) -> told.put(field.name(), text));
+        }
+        return new TurborelException(
+                sqlcode, sqlstate, message, new TurborelException.Details(rule, position, active, told));
+    }
+
     /**
      * A failure read, its tail to the end of what the reader reads.
      *

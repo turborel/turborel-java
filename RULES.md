@@ -55,6 +55,7 @@ Each is told in full in [§7](#7-the-decisions).
 | D10 | Gradle builds it, with JDK 17's compiler, and the checks run on JDK 21 |
 | D11 | One jar, a JPMS module, published to Maven Central with its sources and Javadoc |
 | D12 | Tests are JUnit Jupiter's, in the packages they test |
+| D13 | TLS is the JDK's, and the platform's authorities are the JDK's trusted ones |
 
 ---
 
@@ -504,6 +505,21 @@ Tests use JUnit Jupiter, the one framework (R-TEST-7), under
 `src/test/java`, in the package of the code they test, and run on the
 class path, so they reach the internal packages. `-PtestJava=<n>` runs
 them on another JDK, as CI does for each release D3 supports.
+
+#### D13. TLS is the JDK's, and the platform's authorities are the JDK's trusted ones
+
+TLS is JSSE, the JDK's own (`javax.net.ssl`), so the driver needs
+nothing beyond the JDK. It checks the server's name as the JDK checks
+an HTTPS server's, by the endpoint identification `HTTPS`.
+SCRAM-SHA-256-PLUS binds by `tls-exporter` where the JDK exports keying
+material, JDK 25 and later, and by the server's certificate before it.
+
+turborel-client takes the platform's authorities from the operating
+system's store, or from the files SSL_CERT_FILE and SSL_CERT_DIR name if
+either is set. The driver takes the same two variables the same way;
+without them, it takes the JDK's own trusted authorities: its `cacerts`,
+or the store `javax.net.ssl.trustStore` and `javax.net.ssl.trustStoreType`
+name. For a Java program those are the platform's.
 
 ---
 

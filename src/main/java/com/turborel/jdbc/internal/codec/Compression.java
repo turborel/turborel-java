@@ -58,6 +58,32 @@ public final class Compression {
     }
 
     /**
+     * Frames already encoded, one or a batch, each of at least {@code threshold} bytes compressed
+     * where that makes it shorter ([PROTOCOL Compressed frames]).
+     *
+     * @param frames the frames, each its header then its body
+     * @param threshold the shortest frame compressed
+     * @return the frames to send
+     * @throws TurborelException if the frames would be longer than a Java array holds
+     */
+    public static byte[] frames(byte[] frames, int threshold) throws TurborelException {
+        Writer out = new Writer();
+        int at = 0;
+        while (frames.length - at >= FrameHeader.BYTES) {
+            byte kind = frames[at];
+            int length = (int) Math.min(
+                    frames.length - at - FrameHeader.BYTES,
+                    Integer.toUnsignedLong(java.nio.ByteBuffer.wrap(frames, at + 1, Integer.BYTES)
+                            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                            .getInt()));
+            int body = at + FrameHeader.BYTES;
+            out.raw(frame(kind, java.util.Arrays.copyOfRange(frames, body, body + length), threshold));
+            at = body + length;
+        }
+        return out.toByteArray();
+    }
+
+    /**
      * The frame a compressed frame's body holds.
      *
      * @param body the compressed frame's body

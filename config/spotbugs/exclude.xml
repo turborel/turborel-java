@@ -10,4 +10,29 @@
     <Class name="com.turborel.jdbc.internal.codec.Reader"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <!-- A duplex hands out the streams and the socket it reads and writes,
+       and takes the socket it is made of: that is what it is for. -->
+  <Match>
+    <Package name="com.turborel.jdbc.internal.transport"/>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
+  <!-- The tests' scripted duplex hands out the stream it records, as a
+       duplex does. -->
+  <Match>
+    <Class name="com.turborel.jdbc.internal.session.ConnectionTest$Scripted"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <!-- The tests name /tmp for Unix sockets, whose paths must be shorter
+       than SUN_LEN, which macOS's temporary directory is not, and the
+       name of a Windows named pipe, refused off Windows. -->
+  <Match>
+    <Or>
+      <Class name="com.turborel.jdbc.internal.transport.TransportTest"/>
+      <Class name="com.turborel.jdbc.testing.LiveServer"/>
+    </Or>
+    <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+  </Match>
 </FindBugsFilter>

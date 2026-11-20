@@ -64,6 +64,9 @@ class JsonBinaryTest {
         BigInteger wide = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
         JsonItem big = scalar(new Value.Exact(wide, 0));
         assertArrayEquals(cat(u8(1), u8(5), i128(wide), u32(0)), JsonBinaryWriter.encode(big));
+        BigInteger under = BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE);
+        assertArrayEquals(
+                cat(u8(1), u8(5), i128(under), u32(3)), JsonBinaryWriter.encode(scalar(new Value.Exact(under, 3))));
         JsonItem decfloat = scalar(new Value.Decfloat(BigInteger.valueOf(150), -2));
         assertArrayEquals(cat(u8(1), u8(6), i128(BigInteger.valueOf(15)), u32(-1)), JsonBinaryWriter.encode(decfloat));
         assertEquals(
