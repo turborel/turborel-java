@@ -553,10 +553,10 @@ they follow Turborel's RULES.md D89 and `src/json/binary.rs`.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| P-FRAMES-1 | Every line of `05-protocol-frames.tsv`, at a pinned commit, read as the page lays it out: direction, name, needs, hex, means | `[PROTOCOL Sample frames]` | not yet |
-| P-FRAMES-2 | Every server frame decoded to what its meaning says, with the capabilities it needs granted | `[PROTOCOL Sample frames]` | not yet |
-| P-FRAMES-3 | Every client frame the driver can send encoded byte for byte as the file holds it | `[PROTOCOL Sample frames]` | not yet |
-| P-FRAMES-4 | A compressed frame's sample inflated to the frame its meaning names | `[PROTOCOL Sample frames]` | not yet |
+| P-FRAMES-1 | Every line of `05-protocol-frames.tsv`, at a pinned commit, read as the page lays it out: direction, name, needs, hex, means | `[PROTOCOL Sample frames]` | done |
+| P-FRAMES-2 | Every server frame decoded to what its meaning says, with the capabilities it needs granted | `[PROTOCOL Sample frames]` | done |
+| P-FRAMES-3 | Every client frame the driver can send encoded byte for byte as the file holds it | `[PROTOCOL Sample frames]` | done |
+| P-FRAMES-4 | A compressed frame's sample inflated to the frame its meaning names | `[PROTOCOL Sample frames]` | done |
 
 ### A worked example
 

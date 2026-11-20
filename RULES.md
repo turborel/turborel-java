@@ -417,6 +417,14 @@ the Turborel commit CONFORMANCE.md names, and refuses a citation of a
 heading, decision or rule that is not there (R-TRACE-2). In Java,
 a test cites by its Javadoc comment, beginning `Verifies:`.
 
+The protocol's sample frames, `doc/client/05-protocol-frames.tsv`, are
+copied into the tests' resources at a commit of Turborel's main, at
+045e42a9 now, beside the code that reads them
+(`src/test/resources/com/turborel/jdbc/internal/codec`). Copying them,
+rather than reading main's file as the tests run, keeps each run's
+outcome the commit's own; a change of the file comes in a commit that
+copies it anew, with the headings.
+
 #### D7. A coverage floor, enforced in CI, that only rises
 
 `./gradlew jacocoTestCoverageVerification` measures the library's coverage over every test,
