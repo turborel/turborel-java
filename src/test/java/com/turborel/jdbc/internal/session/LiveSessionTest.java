@@ -191,14 +191,15 @@ class LiveSessionTest {
      */
     @Test
     void terminateGivesAFailingCommit() throws TurborelException, IOException {
-        Connection setUp = trusted(Offer.standard());
-        schema(setUp);
-        run(
-                setUp,
-                "CREATE TABLE TERMINATED (ID INTEGER PRIMARY KEY, P INTEGER, "
-                        + "CONSTRAINT LATER CHECK (P > 0) INITIALLY DEFERRED)",
-                true);
-        setUp.terminate();
+        try (Connection setUp = trusted(Offer.standard())) {
+            schema(setUp);
+            run(
+                    setUp,
+                    "CREATE TABLE TERMINATED (ID INTEGER PRIMARY KEY, P INTEGER, "
+                            + "CONSTRAINT LATER CHECK (P > 0) INITIALLY DEFERRED)",
+                    true);
+            setUp.terminate();
+        }
         Connection connection = trusted(Offer.standard());
         run(connection, "SET SESSION.COMMIT_AT_END = 'ON'", true);
         run(connection, "INSERT INTO TERMINATED VALUES (1, -1)", false);

@@ -11,89 +11,17 @@ import com.turborel.jdbc.TurborelException;
 import com.turborel.jdbc.internal.auth.Password;
 import com.turborel.jdbc.internal.auth.Trust;
 import com.turborel.jdbc.internal.codec.Compression;
-import com.turborel.jdbc.internal.codec.Frames;
 import com.turborel.jdbc.internal.codec.Octets;
 import com.turborel.jdbc.internal.codec.Reply;
 import com.turborel.jdbc.internal.codec.Request;
 import com.turborel.jdbc.internal.codec.Writer;
-import com.turborel.jdbc.internal.transport.Duplex;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /** A connection's login and session over a stream the test scripts ([PROTOCOL Opening a connection]). */
 class ConnectionTest {
-    private static final byte[] KEY = new byte[16];
-
-    /** A stream of the server's bytes, given in advance, and what the client wrote. */
-    private static final class Scripted implements Duplex {
-        private final InputStream in;
-        private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        private boolean closed;
-
-        Scripted(byte[] server) {
-            this.in = new ByteArrayInputStream(server);
-        }
-
-        @Override
-        public InputStream input() {
-            return in;
-        }
-
-        @Override
-        public OutputStream output() {
-            return out;
-        }
-
-        @Override
-        public void bound(@Nullable Duration within) {
-            // Nothing waits on bytes given in advance.
-        }
-
-        @Override
-        public void close() {
-            closed = true;
-        }
-    }
-
-    private static byte[] frame(char kind, Writer body) throws TurborelException {
-        return Frames.frame((byte) kind, body.toByteArray());
-    }
-
-    private static byte[] ready(List<String> granted) throws TurborelException {
-        return frame('R', new Writer().string("ANN").raw(KEY).strings(granted).string("turborel 0.0.0 (alpha)"));
-    }
-
-    private static byte[] status(String name, String value) throws TurborelException {
-        return frame('T', new Writer().string(name).string(value));
-    }
-
-    private static byte[] error(String sqlstate) throws TurborelException {
-        return frame(
-                'E',
-                new Writer()
-                        .bits32(-919)
-                        .string(sqlstate)
-                        .string("refused")
-                        .flag(false)
-                        .flag(false)
-                        .flag(false));
-    }
-
-    private static byte[] cat(byte[]... parts) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        for (byte[] part : parts) {
-            out.writeBytes(part);
-        }
-        return out.toByteArray();
-    }
-
     /**
      * Verifies: [PROTOCOL Opening a connection] the client sends Hello, takes each Status, then
      * Ready: its authorization identifier, cancel key, capabilities granted and server; its first
@@ -102,7 +30,8 @@ class ConnectionTest {
      */
     @Test
     void helloThenStatusThenReady() throws TurborelException {
-        Scripted stream = new Scripted(cat(status("AUTHORIZATION", "ANN"), ready(List.of("status", "ping"))));
+        Script stream =
+                new Script(Script.cat(Script.status("AUTHORIZATION", "ANN"), Script.ready(List.of("status", "ping"))));
         Connection connection = Connection.open(stream, "ann", new Trust(), Offer.standard());
         assertEquals("ANN", connection.authorization());
         assertEquals("turborel 0.0.0 (alpha)", connection.server());
@@ -112,7 +41,7 @@ class ConnectionTest {
         assertNull(connection.canceller(), "a stream the program gave cannot be reached again");
         byte[] hello =
                 new Request.Hello("ann", "trust", Octets.EMPTY, Offer.standard().capabilities(), List.of()).encode();
-        assertArrayEquals(hello, stream.out.toByteArray());
+        assertArrayEquals(hello, stream.written());
         assertFalse(Offer.standard().capabilities().contains(Capability.COMPRESSION));
         assertEquals(Capability.ALL.size() - 1, Offer.standard().capabilities().size());
     }
@@ -123,11 +52,11 @@ class ConnectionTest {
      */
     @Test
     void aRefusalIsAnError() throws TurborelException {
-        Scripted stream = new Scripted(error("28000"));
+        Script stream = new Script(Script.error("28000"));
         TurborelException refused = assertThrows(
                 TurborelException.class, () -> Connection.open(stream, "ann", new Password("x"), Offer.standard()));
         assertEquals("28000", refused.getSQLState());
-        assertTrue(stream.closed);
+        assertTrue(stream.closed());
     }
 
     /**
@@ -138,20 +67,23 @@ class ConnectionTest {
     void aLoginOutOfTurnFails() throws TurborelException {
         TurborelException pong = assertThrows(
                 TurborelException.class,
-                () -> Connection.open(new Scripted(frame('G', new Writer())), "ann", new Trust(), Offer.none()));
+                () -> Connection.open(new Script(Script.frame('G', new Writer())), "ann", new Trust(), Offer.none()));
         assertEquals("08006", pong.getSQLState());
         TurborelException ended = assertThrows(
                 TurborelException.class,
-                () -> Connection.open(new Scripted(new byte[0]), "ann", new Trust(), Offer.none()));
+                () -> Connection.open(new Script(new byte[0]), "ann", new Trust(), Offer.none()));
         assertEquals("08006", ended.getSQLState());
         TurborelException cut = assertThrows(
                 TurborelException.class,
-                () -> Connection.open(new Scripted(new byte[] {'R', 9, 0, 0, 0, 1}), "ann", new Trust(), Offer.none()));
+                () -> Connection.open(new Script(new byte[] {'R', 9, 0, 0, 0, 1}), "ann", new Trust(), Offer.none()));
         assertEquals("08006", cut.getSQLState());
         TurborelException challenged = assertThrows(
                 TurborelException.class,
                 () -> Connection.open(
-                        new Scripted(frame('C', new Writer().bytes(new byte[0]))), "ann", new Trust(), Offer.none()));
+                        new Script(Script.frame('C', new Writer().bytes(new byte[0]))),
+                        "ann",
+                        new Trust(),
+                        Offer.none()));
         assertEquals("08006", challenged.getSQLState(), "trust has no answer to a challenge");
     }
 
@@ -162,10 +94,11 @@ class ConnectionTest {
      */
     @Test
     void compressionBeginsAfterReady() throws TurborelException {
-        byte[] status = status("SCHEMA", "A".repeat(4000));
+        byte[] status = Script.status("SCHEMA", "A".repeat(4000));
         byte[] compressed = Compression.frame(status[0], java.util.Arrays.copyOfRange(status, 5, status.length), 0);
         Connection connection = Connection.open(
-                new Scripted(cat(ready(List.of("compression")), compressed, frame('G', new Writer()))),
+                new Script(
+                        Script.cat(Script.ready(List.of("compression")), compressed, Script.frame('G', new Writer()))),
                 "ann",
                 new Trust(),
                 Offer.none().compressed());
@@ -175,7 +108,7 @@ class ConnectionTest {
         assertThrows(
                 TurborelException.class,
                 () -> Connection.open(
-                        new Scripted(cat(compressed, ready(List.of()))), "ann", new Trust(), Offer.none()));
+                        new Script(Script.cat(compressed, Script.ready(List.of()))), "ann", new Trust(), Offer.none()));
     }
 
     /**
@@ -184,15 +117,15 @@ class ConnectionTest {
      */
     @Test
     void aCapabilityNotGrantedIsRefusedBeforeSending() throws TurborelException {
-        Scripted stream = new Scripted(ready(List.of("ping")));
+        Script stream = new Script(Script.ready(List.of("ping")));
         Connection connection = Connection.open(stream, "ann", new Trust(), Offer.standard());
         connection.needs(false, Capability.PING);
         connection.needs(true, Capability.RESET);
-        int sent = stream.out.size();
+        int sent = stream.writtenSize();
         TurborelException refused =
                 assertThrows(TurborelException.class, () -> connection.needs(false, Capability.RESET));
         assertEquals("08006", refused.getSQLState());
-        assertEquals(sent, stream.out.size());
+        assertEquals(sent, stream.writtenSize());
     }
 
     /**
@@ -202,15 +135,15 @@ class ConnectionTest {
     @Test
     void noticesAreKeptOrHanded() throws TurborelException {
         List<byte[]> replies = new ArrayList<>();
-        replies.add(ready(List.of()));
+        replies.add(Script.ready(List.of()));
         for (int i = 0; i <= Told.KEPT_NOTICES; i++) {
-            replies.add(frame('N', new Writer().string("01000").string(Integer.toString(i))));
+            replies.add(Script.frame('N', new Writer().string("01000").string(Integer.toString(i))));
         }
-        replies.add(frame('G', new Writer()));
-        replies.add(frame('N', new Writer().string("01000").string("handed")));
-        replies.add(frame('G', new Writer()));
-        Connection connection =
-                Connection.open(new Scripted(cat(replies.toArray(new byte[0][]))), "ann", new Trust(), Offer.none());
+        replies.add(Script.frame('G', new Writer()));
+        replies.add(Script.frame('N', new Writer().string("01000").string("handed")));
+        replies.add(Script.frame('G', new Writer()));
+        Connection connection = Connection.open(
+                new Script(Script.cat(replies.toArray(new byte[0][]))), "ann", new Trust(), Offer.none());
         connection.receive();
         List<Reply.Notice> kept = connection.takeNotices();
         assertEquals(Told.KEPT_NOTICES, kept.size());
@@ -230,27 +163,33 @@ class ConnectionTest {
      */
     @Test
     void terminateReadsWhatTheServerSays() throws TurborelException {
-        Scripted quiet = new Scripted(ready(List.of()));
+        Script quiet = new Script(Script.ready(List.of()));
         Connection connection = Connection.open(quiet, "ann", new Trust(), Offer.none());
         connection.terminate();
-        assertTrue(quiet.closed);
+        assertTrue(quiet.closed());
         assertTrue(connection.isLost());
         assertThrows(TurborelException.class, () -> connection.send(new Request.Ping()));
         Connection noticed = Connection.open(
-                new Scripted(cat(
-                        ready(List.of()),
-                        frame('N', new Writer().string("01000").string("bye")))),
+                new Script(Script.cat(
+                        Script.ready(List.of()),
+                        Script.frame('N', new Writer().string("01000").string("bye")))),
                 "ann",
                 new Trust(),
                 Offer.none());
         noticed.terminate();
-        Connection failing =
-                Connection.open(new Scripted(cat(ready(List.of()), error("40002"))), "ann", new Trust(), Offer.none());
+        Connection failing = Connection.open(
+                new Script(Script.cat(Script.ready(List.of()), Script.error("40002"))),
+                "ann",
+                new Trust(),
+                Offer.none());
         assertEquals(
                 "40002",
                 assertThrows(TurborelException.class, failing::terminate).getSQLState());
         Connection odd = Connection.open(
-                new Scripted(cat(ready(List.of()), frame('S', new Writer()))), "ann", new Trust(), Offer.none());
+                new Script(Script.cat(Script.ready(List.of()), Script.frame('S', new Writer()))),
+                "ann",
+                new Trust(),
+                Offer.none());
         assertEquals(
                 "08006", assertThrows(TurborelException.class, odd::terminate).getSQLState());
     }
@@ -262,7 +201,10 @@ class ConnectionTest {
     @Test
     void aReplyPastTheLimitIsRefused() throws TurborelException {
         Connection connection = Connection.open(
-                new Scripted(cat(ready(List.of()), status("SCHEMA", "LONGER THAN EIGHT"), frame('G', new Writer()))),
+                new Script(Script.cat(
+                        Script.ready(List.of()),
+                        Script.status("SCHEMA", "LONGER THAN EIGHT"),
+                        Script.frame('G', new Writer()))),
                 "ann",
                 new Trust(),
                 Offer.none());
@@ -280,7 +222,7 @@ class ConnectionTest {
      */
     @Test
     void anErrorEndsTheConnectionByItsClass() throws TurborelException {
-        byte[] statement = frame(
+        byte[] statement = Script.frame(
                 'E',
                 new Writer()
                         .bits32(-103)
@@ -294,7 +236,8 @@ class ConnectionTest {
                         .u8(7)
                         .string("ERROR"));
         Connection connection = Connection.open(
-                new Scripted(cat(ready(List.of()), statement, error("08003"), error("08001"))),
+                new Script(
+                        Script.cat(Script.ready(List.of()), statement, Script.error("08003"), Script.error("08001"))),
                 "ann",
                 new Trust(),
                 Offer.none());
@@ -322,7 +265,7 @@ class ConnectionTest {
      */
     @Test
     void aGivenStreamAndASecretInTheClear() throws TurborelException {
-        Connection connection = Connection.open(new Scripted(ready(List.of())), "ann", new Trust(), Offer.none());
+        Connection connection = Connection.open(new Script(Script.ready(List.of())), "ann", new Trust(), Offer.none());
         assertEquals(
                 "08006",
                 assertThrows(TurborelException.class, () -> connection.setReadTimeout(Duration.ofSeconds(1)))
@@ -369,16 +312,17 @@ class ConnectionTest {
      */
     @Test
     void repliesThatOpenATransaction() throws TurborelException {
-        byte[] complete = frame('K', new Writer().bits32(0).string("00000").flag(false));
+        byte[] complete =
+                Script.frame('K', new Writer().bits32(0).string("00000").flag(false));
         byte[][] opening = {
-            frame('D', new Writer().u32(0)),
-            frame('S', new Writer()),
-            frame('L', new Writer().u8(0).bytes(new byte[] {1})),
-            frame('L', new Writer().u8(1).u32(5)),
+            Script.frame('D', new Writer().u32(0)),
+            Script.frame('S', new Writer()),
+            Script.frame('L', new Writer().u8(0).bytes(new byte[] {1})),
+            Script.frame('L', new Writer().u8(1).u32(5)),
         };
         for (byte[] reply : opening) {
             Connection connection = Connection.open(
-                    new Scripted(cat(ready(List.of()), reply, complete)), "ann", new Trust(), Offer.none());
+                    new Script(Script.cat(Script.ready(List.of()), reply, complete)), "ann", new Trust(), Offer.none());
             assertFalse(connection.inTransaction());
             connection.receive();
             assertTrue(connection.inTransaction(), Integer.toString(reply[0]));
@@ -393,13 +337,13 @@ class ConnectionTest {
      */
     @Test
     void terminateTakesAStatusOrAPong() throws TurborelException {
-        for (byte[] last : new byte[][] {status("SCHEMA", "A"), frame('G', new Writer())}) {
-            Connection connection =
-                    Connection.open(new Scripted(cat(ready(List.of()), last)), "ann", new Trust(), Offer.none());
+        for (byte[] last : new byte[][] {Script.status("SCHEMA", "A"), Script.frame('G', new Writer())}) {
+            Connection connection = Connection.open(
+                    new Script(Script.cat(Script.ready(List.of()), last)), "ann", new Trust(), Offer.none());
             connection.terminate();
             assertTrue(connection.isLost());
         }
-        Connection closed = Connection.open(new Scripted(ready(List.of())), "ann", new Trust(), Offer.none());
+        Connection closed = Connection.open(new Script(Script.ready(List.of())), "ann", new Trust(), Offer.none());
         closed.close();
         closed.close();
         assertTrue(closed.isLost());

@@ -25,11 +25,19 @@ import org.jspecify.annotations.Nullable;
 /**
  * A connection to a server, one request at a time ([PROTOCOL Opening a connection], [CLIENT
  * Connecting]): opened by Hello and logged in by its mechanism, its session's settings and notices
- * taken as they come, ended by Terminate. Every failure is a {@link TurborelException}: the
- * server's own, or one of the connection, SQLCODE -919 and SQLSTATE class 08, after which the
- * connection takes no more. As Turborel's {@code client/src/connection.rs}.
+ * taken as they come, ended by Terminate. Its {@link #statements} run statements; its {@link
+ * #controls} ping, reset and change its session; {@link #told} gives what the last statement's
+ * completion told. Every failure is a {@link TurborelException}: the server's own, or one of the
+ * connection, SQLCODE -919 and SQLSTATE class 08, after which the connection takes no more. As
+ * Turborel's {@code client/src/connection.rs}.
  */
 public final class Connection implements AutoCloseable {
+    /** A {@code u32}'s bits: a statement's number wraps past them. */
+    private static final long U32_MASK = 0xFFFF_FFFFL;
+
+    /** The class of a warning's SQLSTATE. */
+    private static final String WARNING_CLASS = "01";
+
     private final Wire wire;
     private final boolean bounded;
     private final Told told = new Told();
@@ -41,6 +49,11 @@ public final class Connection implements AutoCloseable {
     private String authorization = "";
     private String server = "";
     private boolean active;
+    private boolean autocommit;
+    private @Nullable String warning;
+    private long nextStatement;
+    private final Statements statements = new Statements(this);
+    private final Controls controls = new Controls(this, statements);
 
     private Connection(Duplex duplex, boolean bounded, Timeouts timeouts) {
         this.wire = new Wire(duplex);
@@ -191,6 +204,85 @@ public final class Connection implements AutoCloseable {
     }
 
     /**
+     * Whether each statement run, executed or queried is its own transaction from now on, if
+     * {@code on} ([CLIENT Running statements]): the server commits it once the statement succeeds,
+     * or rolls it back if it fails, within the request, so no COMMIT is sent. Off as a connection
+     * opens: a transaction begins with the first statement and lasts until COMMIT or ROLLBACK. A
+     * cursor is read within its transaction, which ends as the cursor does if the server granted
+     * {@code fetch-ends}.
+     *
+     * @param on whether each statement is its own transaction
+     */
+    public void setAutocommit(boolean on) {
+        autocommit = on;
+    }
+
+    /**
+     * Whether each statement is its own transaction.
+     *
+     * @return whether autocommit is on
+     */
+    public boolean autocommit() {
+        return autocommit;
+    }
+
+    /**
+     * The SQLSTATE of the warning, of class 01, the last statement completed with, as its Complete
+     * said: of a query too, once all its rows were read.
+     *
+     * @return the SQLSTATE, or none
+     */
+    public @Nullable String warning() {
+        return warning;
+    }
+
+    /**
+     * What runs the connection's statements.
+     *
+     * @return its statements
+     */
+    public Statements statements() {
+        return statements;
+    }
+
+    /**
+     * What pings, resets and changes the connection's session.
+     *
+     * @return its controls
+     */
+    public Controls controls() {
+        return controls;
+    }
+
+    /**
+     * What the server has told the connection beside its replies ([CLIENT What the server tells]).
+     *
+     * @return what it told
+     */
+    public Told told() {
+        return told;
+    }
+
+    /** The number the next statement prepared takes, a {@code u32}, counted from 0. */
+    long nextStatement() {
+        long number = nextStatement;
+        nextStatement = (nextStatement + 1) & U32_MASK;
+        return number;
+    }
+
+    /** The connection's frames, for a request the low-level client has no method of, as a copy's. */
+    Wire wire() {
+        return wire;
+    }
+
+    /** Takes a ChangeUser's Ready: the session renewed, its user, server and cancel key. */
+    void renewed(Reply.Ready ready) {
+        authorization = ready.authorization();
+        server = ready.server();
+        key = ready.key();
+    }
+
+    /**
      * Where the connection reached its server: none for a stream the program gave.
      *
      * @return the target, or none
@@ -330,18 +422,22 @@ public final class Connection implements AutoCloseable {
     }
 
     /**
-     * Sends a request, compressed once compression is granted.
+     * Sends a request, compressed once compression is granted. A request the codec refuses, as one
+     * of more attributes than a message takes, is refused before anything is sent, and the
+     * connection kept.
      *
      * @param request the request
-     * @throws TurborelException the failure that lost the connection, before or as it is written
+     * @throws TurborelException the codec's refusal; the failure that lost the connection, before
+     *     or as it is written
      */
     void send(Request request) throws TurborelException {
         TurborelException was = lost;
         if (was != null) {
             throw was;
         }
+        byte[] frames = request.encode();
         try {
-            wire.send(request, told.compress());
+            wire.write(frames, told.compress());
         } catch (TurborelException failure) {
             throw lostBy(failure);
         }
@@ -376,11 +472,20 @@ public final class Connection implements AutoCloseable {
         if (reply instanceof Reply.Complete complete) {
             Completed c = complete.completed();
             active = c.active();
+            warning = c.sqlstate().startsWith(WARNING_CLASS) ? c.sqlstate() : null;
             told.completed(c.fields());
         } else if (reply instanceof Reply.Error error) {
             active = error.failure().active();
+            warning = null;
+        } else if (reply instanceof Reply.Ready) {
+            // Ready ends a login or a ChangeUser, which renews the session as Reset does.
+            active = false;
+            warning = null;
         } else if (opensTransaction(reply)) {
             active = true;
+            if (reply instanceof Reply.Description) {
+                warning = null;
+            }
         }
         return reply;
     }

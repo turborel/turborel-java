@@ -63,7 +63,7 @@ final class Wire {
      *
      * @param request the request
      * @param compressFrom the compression threshold, or none
-     * @throws TurborelException a connection failure if it cannot be written
+     * @throws TurborelException the codec's refusal; a connection failure if it cannot be written
      */
     void send(Request request, @Nullable Integer compressFrom) throws TurborelException {
         write(request.encode(), compressFrom);

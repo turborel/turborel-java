@@ -17,7 +17,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The live tests' server (RULES.md R-TEST-8): a Turborel server on loopback, on the Java driver's
- * own port, 17434, kept in memory, with test certificates, its owner ANN of a password, and
+ * own port, 17434, in a data directory of its own, with test certificates, its owner ANN of a
+ * password, and
  * SERVER.TRUST_LOCAL ON, as test/server/live.settings sets it, the image's entry point being
  * {@code turboreld}. The live suite runs only when TURBOREL_TEST_SERVER names the server: a
  * {@code turboreld} binary, or {@code docker:} and an image, as CI names
@@ -128,39 +129,72 @@ public final class LiveServer {
                 ? Files.createTempDirectory(SHORT, "tj")
                 : Files.createDirectories(dir.resolve("sock"));
         boolean docker = server.startsWith(DOCKER);
-        List<String> command = new ArrayList<>();
-        if (docker) {
-            command.addAll(List.of(
-                    "docker",
-                    "run",
-                    "--rm",
-                    "-i",
-                    "--name",
-                    CONTAINER,
-                    "--network",
-                    "host",
-                    // As the tests' own user, so its socket and the files it reads are theirs.
-                    "--user",
-                    Files.getAttribute(dir, "unix:uid") + ":" + Files.getAttribute(dir, "unix:gid"),
-                    "-v",
-                    dir + ":" + dir,
-                    "-v",
-                    sockets + ":" + sockets,
-                    server.substring(DOCKER.length())));
-        } else {
-            command.add(server);
-        }
-        command.addAll(List.of("--memory", "--owner", OWNER.toLowerCase(java.util.Locale.ROOT)));
+        Path data = dir.resolve("data");
+        owner(launcher(server, docker, dir, sockets, "setup"), data);
+        List<String> command = launcher(server, docker, dir, sockets, "server");
+        command.addAll(List.of("--dir", data.toString()));
         for (String setting : settings(certificates, sockets.resolve("turborel.sock"))) {
             command.addAll(List.of("--set", setting));
         }
         Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
         LiveServer live = new LiveServer(process, sockets, certificates, docker);
-        try (OutputStream in = process.getOutputStream()) {
-            in.write((PASSWORD + "\n").getBytes(StandardCharsets.UTF_8));
-        }
+        process.getOutputStream().close();
         live.awaitListening(dir.resolve("server.log"));
         return live;
+    }
+
+    /** What runs {@code turboreld}: the binary, or a container of the image, as the tests' own user. */
+    private static List<String> launcher(String server, boolean docker, Path dir, Path sockets, String role)
+            throws IOException {
+        List<String> command = new ArrayList<>();
+        if (!docker) {
+            command.add(server);
+            return command;
+        }
+        command.addAll(List.of(
+                "docker",
+                "run",
+                "--rm",
+                "-i",
+                "--name",
+                CONTAINER + "-" + role,
+                "--network",
+                "host",
+                // As the tests' own user, so its socket and the files it reads and writes are theirs.
+                "--user",
+                Files.getAttribute(dir, "unix:uid") + ":" + Files.getAttribute(dir, "unix:gid"),
+                "-v",
+                dir + ":" + dir,
+                "-v",
+                sockets + ":" + sockets,
+                server.substring(DOCKER.length())));
+        return command;
+    }
+
+    /**
+     * Makes the database of the data directory {@code data}, its owner ANN of the password fed on
+     * standard input, as a database kept in a directory is given its owner.
+     */
+    private static void owner(List<String> launcher, Path data) throws IOException {
+        List<String> command = new ArrayList<>(launcher);
+        command.addAll(
+                List.of("--dir", data.toString(), "user", "add", OWNER.toLowerCase(java.util.Locale.ROOT), "--owner"));
+        Process setup = new ProcessBuilder(command).redirectErrorStream(true).start();
+        try (OutputStream in = setup.getOutputStream()) {
+            in.write((PASSWORD + "\n").getBytes(StandardCharsets.UTF_8));
+        }
+        try {
+            byte[] said = setup.getInputStream().readAllBytes();
+            if (!setup.waitFor(START_WITHIN_SECONDS, TimeUnit.SECONDS) || setup.exitValue() != 0) {
+                throw new IOException(
+                        "the live server's owner was not made: " + new String(said, StandardCharsets.UTF_8));
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException(e);
+        } finally {
+            setup.destroy();
+        }
     }
 
     /** The settings of test/server/live.settings, the certificates' and the socket's paths put in. */
@@ -218,7 +252,7 @@ public final class LiveServer {
     private void stop() {
         if (docker) {
             try {
-                new ProcessBuilder("docker", "rm", "-f", CONTAINER)
+                new ProcessBuilder("docker", "rm", "-f", CONTAINER + "-server")
                         .redirectErrorStream(true)
                         .start()
                         .waitFor(START_WITHIN_SECONDS, TimeUnit.SECONDS);

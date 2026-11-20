@@ -22,7 +22,7 @@
   <!-- The tests' scripted duplex hands out the stream it records, as a
        duplex does. -->
   <Match>
-    <Class name="com.turborel.jdbc.internal.session.ConnectionTest$Scripted"/>
+    <Class name="com.turborel.jdbc.internal.session.Script"/>
     <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
   <!-- The tests name /tmp for Unix sockets, whose paths must be shorter
@@ -34,5 +34,21 @@
       <Class name="com.turborel.jdbc.testing.LiveServer"/>
     </Or>
     <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+  </Match>
+  <!-- A statement's results hold lists they copied unmodifiable, and a
+       failure that is the program's to read; a connection hands out the
+       views of itself that run its statements, control its session and
+       tell what the server told: that is what they are for. -->
+  <Match>
+    <Or>
+      <Class name="com.turborel.jdbc.internal.session.Batch"/>
+      <Class name="com.turborel.jdbc.internal.session.Outcome$Rows"/>
+      <Class name="com.turborel.jdbc.internal.session.Ran"/>
+      <Class name="com.turborel.jdbc.internal.session.Connection"/>
+    </Or>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
   </Match>
 </FindBugsFilter>
