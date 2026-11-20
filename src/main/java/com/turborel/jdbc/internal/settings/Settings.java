@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -257,10 +258,22 @@ public final class Settings {
         return new Settings(explicit.over(service).over(environment));
     }
 
-    /** A path setting's value. */
-    private static @Nullable Path path(Options options, String key) {
+    /**
+     * A path setting's value.
+     *
+     * @throws TurborelException SQLSTATE 08001 if this platform takes no such path
+     */
+    private static @Nullable Path path(Options options, String key) throws TurborelException {
         String value = options.get(key);
-        return value == null ? null : Path.of(value);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Path.of(value);
+        } catch (InvalidPathException e) {
+            throw Invalid.setting(
+                    "[CLIENT Where settings come from] " + key + " is " + value + ", no path: " + e.getMessage());
+        }
     }
 
     /** The file {@code name} in the home directory. */
@@ -323,7 +336,7 @@ public final class Settings {
             throw Invalid.setting("[CLIENT Where settings come from] a host of the list is empty");
         }
         if (name.startsWith("/") || name.startsWith("\\")) {
-            return new Host.Local(Path.of(name));
+            return new Host.Local(name);
         }
         if (name.startsWith("[")) {
             int close = name.indexOf(']');

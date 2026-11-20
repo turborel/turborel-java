@@ -61,7 +61,7 @@ public final class Uri { public static final String SCHEME = "turborel://"; }
 
 public sealed interface Host {
     record Tcp(String name, int port) implements Host {}
-    record Local(Path path) implements Host {}
+    record Local(String name) implements Host { public Path path() throws TurborelException; }
     String passHost();
     int passPort();
 }
@@ -106,8 +106,8 @@ database, so its path is empty or `/` alone.
 **Hosts.** `host` is a comma-separated list, each `name`, `name:port`,
 `[address]` or `[address]:port`; a name of two colons or more is an
 IPv6 address of no port; a path, beginning `/` or `\`, names a Unix
-socket, or on Windows a named pipe. A host of no port takes `port`'s of
-its place in the list, or `port`'s one, or 7422.
+socket, or on Windows a named pipe, kept as written. A host of no port
+takes `port`'s of its place in the list, or `port`'s one, or 7422.
 
 **Files.** A service file's sections are `[name]` lines, each followed
 by `setting = value` lines; `#` begins a comment line. A password

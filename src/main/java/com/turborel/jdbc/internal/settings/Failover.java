@@ -109,8 +109,7 @@ final class Failover {
      */
     private static List<Reached> targets(Host host, @Nullable String serverName, @Nullable TlsConfig tls) {
         if (host instanceof Host.Local local) {
-            Target target = new Target.Local(local.path());
-            return List.of(new Reached(local.path().toString(), () -> target));
+            return List.of(new Reached(local.name(), () -> new Target.Local(local.path())));
         }
         Host.Tcp tcp = (Host.Tcp) host;
         String server = serverName == null ? tcp.name() : serverName;

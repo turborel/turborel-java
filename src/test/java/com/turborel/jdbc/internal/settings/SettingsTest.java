@@ -69,7 +69,7 @@ class SettingsTest {
                         new Host.Tcp("db1", 7000),
                         new Host.Tcp("::1", 7001),
                         new Host.Tcp("db3", Settings.DEFAULT_PORT),
-                        new Host.Local(Path.of("/run/s.sock"))),
+                        new Host.Local("/run/s.sock")),
                 settings.hosts());
         assertEquals(TlsMode.VERIFY_FULL, settings.tlsMode());
         assertEquals(TargetRole.READ_WRITE, settings.target());
@@ -332,7 +332,7 @@ class SettingsTest {
                 "a host's own port prevails; of two ports, a third host takes the default");
         assertEquals(new Host.Tcp("fe80::1:2", 4), Settings.host("fe80::1:2", 4));
         assertEquals(new Host.Tcp("::1", 4), Settings.host("[::1]junk", 4));
-        assertEquals(new Host.Local(Path.of("\\\\.\\pipe\\turborel")), Settings.host("\\\\.\\pipe\\turborel", 4));
+        assertEquals(new Host.Local("\\\\.\\pipe\\turborel"), Settings.host("\\\\.\\pipe\\turborel", 4));
         Path missing = Path.of(
                 System.getProperty("java.io.tmpdir"),
                 "turborel-java-no-service-" + ProcessHandle.current().pid());
@@ -370,7 +370,14 @@ class SettingsTest {
         Path file = file("passfile-local", "/run/s.sock:" + Settings.DEFAULT_PORT + ":ann:local\n");
         Options explicit = new Options().set(Options.USER, "ann").set(Options.PASSFILE, file.toString());
         Settings settings = Settings.resolveIn(explicit, environment());
-        assertEquals("local", settings.passwordFor(new Host.Local(Path.of("/run/s.sock"))));
+        assertEquals("local", settings.passwordFor(new Host.Local("/run/s.sock")));
+        assertEquals(Path.of("/run/s.sock"), new Host.Local("/run/s.sock").path());
+        TurborelException nul = assertThrows(TurborelException.class, () -> new Host.Local("/run/\0").path());
+        assertEquals("08006", nul.getSQLState());
+        assertEquals(
+                "08001",
+                refused(assertThrows(TurborelException.class, () -> resolved(Options.PASSFILE, "pass\0"))),
+                "a path no platform takes");
     }
 
     /**
