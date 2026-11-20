@@ -51,5 +51,5 @@ Nothing is open. Every row M7 named is done.
 
 ## M8 Parity audit
 
-- Every row of CONFORMANCE.md checked against turborel-client and the
-  spec, the coverage floor held (RULES.md D7), and this file empty.
+Nothing is open. Every row was checked against turborel-client and the
+spec at 045e42a9, the coverage floor held.
