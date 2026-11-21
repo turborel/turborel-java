@@ -35,11 +35,27 @@ class LiveJdbcTypesTest {
         {"I", Types.ARRAY, "ARRAY", java.sql.Array.class},
     };
 
+    /** Asserts a VALUES of CASTs and a UNION of one type keep it, and of two types are NUMERIC. */
+    private static void expressions(Statement s) throws SQLException {
+        Object[][] told = {
+            {"VALUES (CAST(1 AS INTEGER)), (CAST(2 AS INTEGER))", Types.INTEGER, "INTEGER"},
+            {"SELECT A FROM JDBC_DECLARED UNION SELECT A FROM JDBC_DECLARED", Types.INTEGER, "INTEGER"},
+            {"SELECT A FROM JDBC_DECLARED UNION SELECT B FROM JDBC_DECLARED", Types.NUMERIC, "NUMERIC"},
+        };
+        for (Object[] each : told) {
+            try (ResultSet rs = s.executeQuery((String) each[0])) {
+                assertEquals(each[1], rs.getMetaData().getColumnType(1), (String) each[0]);
+                assertEquals(each[2], rs.getMetaData().getColumnTypeName(1), (String) each[0]);
+            }
+        }
+    }
+
     /**
      * Verifies: [PROTOCOL Declared types] each column's declared type is its JDBC type, granted
      * {@code declared-types}, which connecting asks for: an INTEGER INTEGER and an Integer, a
      * BIGINT BIGINT and a Long, a FLOAT FLOAT and a Double; an array's elements of its element's
-     * declared type ([CLIENT Prepared statements]).
+     * declared type, a VALUES of CASTs of one type and a UNION of one type that type, INTEGER
+     * with SMALLINT NUMERIC ([CLIENT Prepared statements]).
      */
     @Test
     void declaredTypesAreShown() throws SQLException, IOException {
@@ -64,6 +80,12 @@ class LiveJdbcTypesTest {
                 }
                 assertEquals(5, md.getPrecision(5));
                 java.sql.Array a = rs.getArray(9);
+                assertEquals(10, ((Object[]) a.getArray())[0]);
+            }
+            expressions(s);
+            try (ResultSet rs = s.executeQuery("SELECT I FROM JDBC_DECLARED")) {
+                assertTrue(rs.next());
+                java.sql.Array a = rs.getArray(1);
                 assertEquals(Types.INTEGER, a.getBaseType());
                 assertEquals(10, ((Object[]) a.getArray())[0]);
             }

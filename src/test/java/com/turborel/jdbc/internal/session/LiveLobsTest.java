@@ -237,7 +237,8 @@ class LiveLobsTest {
 
     /**
      * Verifies: [CLIENT Running statements] a {@code ?} value longer than its column, cut to fit,
-     * completes its INSERT with the warning 01004, the value kept as cut.
+     * completes its INSERT with the warning 01004, the value kept as cut; a query comparing a
+     * column with a {@code ?} cut to its type completes with 01004 too, with ORDER BY or without.
      */
     @Test
     void aValueCutWarns() throws TurborelException, IOException {
@@ -249,6 +250,15 @@ class LiveLobsTest {
             assertEquals("01004", done.completed().sqlstate());
             assertEquals("01004", connection.warning());
             assertEquals(List.of(List.of(new Value.Text("abc"))), rows(statements.query("SELECT N FROM CUT_ROWS")));
+            for (String order : List.of("", " ORDER BY N")) {
+                Statement compared = statements.prepare("SELECT N FROM CUT_ROWS WHERE N = ?" + order);
+                Outcome outcome = statements.execute(compared, List.of(new Value.Text("abcdef")));
+                assertEquals(List.of(List.of(new Value.Text("abc"))), rows(outcome), order);
+                assertEquals(
+                        "01004",
+                        connection.warning(),
+                        "a query's ? cut, with" + (order.isEmpty() ? "out" : "") + " ORDER BY");
+            }
             statements.query("ROLLBACK");
         }
     }
