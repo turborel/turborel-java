@@ -21,7 +21,11 @@ import java.util.Set;
  * the order written, unless keys are to be unique.
  */
 public final class JsonParse {
-    /** The digits an exact number holds, Turborel's {@code MAX_EXACT_PRECISION}. */
+    /**
+     * The most digits of a JSON number held exact, Turborel's {@code JSON_EXACT_DIGITS}: those of
+     * 64 bits, as RFC 8259 lets precision be limited, though an exact number of SQL holds 38; more
+     * are decimal floating point (Turborel's RULES.md D695).
+     */
     static final int MAX_EXACT_DIGITS = 18;
 
     /** The digits a decimal floating point number holds. */
@@ -328,8 +332,8 @@ public final class JsonParse {
 
     /**
      * The exact number of a sign, the digits before and after its point: of at most 18 digits as
-     * written, exact; else exact without its insignificant zeros if they made it too long; else
-     * the decimal floating point number it is.
+     * written, the most Turborel holds a JSON number exact by, exact; else exact without its
+     * insignificant zeros if they made it too long; else the decimal floating point number it is.
      */
     static JsonItem exact(boolean negative, String whole, String fraction) throws TurborelException {
         String digits = whole + fraction;

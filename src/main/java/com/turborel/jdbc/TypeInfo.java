@@ -17,9 +17,9 @@ enum TypeInfo {
     BOOLEAN("BOOLEAN", Types.BOOLEAN, 1, null, null),
     SMALLINT("SMALLINT", Types.SMALLINT, Limits.SMALLINT, null, null),
     INTEGER("INTEGER", Types.INTEGER, Limits.INTEGER, null, null),
-    BIGINT("BIGINT", Types.BIGINT, Limits.NUMERIC, null, null),
-    NUMERIC("NUMERIC", Types.NUMERIC, Limits.NUMERIC, null, "precision,scale"),
-    DECIMAL("DECIMAL", Types.DECIMAL, Limits.NUMERIC, null, "precision,scale"),
+    BIGINT("BIGINT", Types.BIGINT, Limits.BIGINT, null, null),
+    NUMERIC("NUMERIC", Types.NUMERIC, Limits.EXACT, null, "precision,scale"),
+    DECIMAL("DECIMAL", Types.DECIMAL, Limits.EXACT, null, "precision,scale"),
     DECFLOAT("DECFLOAT", Types.DECIMAL, Limits.DECFLOAT, null, "precision"),
     FLOAT("FLOAT", Types.FLOAT, Limits.FLOAT, null, "precision"),
     REAL("REAL", Types.REAL, Limits.REAL, null, null),
@@ -50,7 +50,11 @@ enum TypeInfo {
     private static final class Limits {
         static final int SMALLINT = 5;
         static final int INTEGER = 10;
-        static final int NUMERIC = 18;
+        /** The most digits of an exact number, Turborel's {@code MAX_EXACT_PRECISION}. */
+        static final int EXACT = 38;
+        /** BIGINT's digits, Turborel's {@code BIGINT_PRECISION}. */
+        static final int BIGINT = 18;
+
         static final int DECFLOAT = 34;
         static final int REAL = 24;
         static final int FLOAT = 53;
@@ -114,7 +118,7 @@ enum TypeInfo {
     /** Its row of {@code getTypeInfo}. */
     List<Value> row() {
         boolean number = Limits.NUMBERS.contains(jdbc);
-        boolean exact = jdbc == Types.DECIMAL || jdbc == Types.NUMERIC;
+        boolean exact = this == NUMERIC || this == DECIMAL;
         boolean fraction = Limits.FRACTIONS.contains(jdbc);
         boolean text = jdbc == Types.CHAR || jdbc == Types.VARCHAR || jdbc == Types.CLOB;
         List<Value> row = new ArrayList<>();
@@ -129,7 +133,7 @@ enum TypeInfo {
                 new Value.Truth(text),
                 MetaDataQueries.number(DatabaseMetaData.typeSearchable),
                 new Value.Truth(!number)));
-        int scale = exact ? Limits.NUMERIC : fraction ? Limits.FRACTION : 0;
+        int scale = exact ? Limits.EXACT : fraction ? Limits.FRACTION : 0;
         int radix = Limits.APPROXIMATE.contains(jdbc) ? Limits.BINARY_RADIX : Limits.DECIMAL_RADIX;
         row.addAll(List.of(
                 new Value.Truth(false),

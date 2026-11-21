@@ -151,4 +151,49 @@ class LiveJdbcTypesTest {
         assertTrue(pm.isWrapperFor(ParameterMetaData.class));
         assertEquals(pm, pm.unwrap(ParameterMetaData.class));
     }
+
+    /**
+     * Verifies: [PROTOCOL Values] an exact number of 38 digits, as many as Turborel's hold,
+     * round-trips exactly, sent as a parameter and read back as a result, its column's precision
+     * 38, and NUMERIC's and DECIMAL's in the type information; one of 39 digits is refused
+     * (SQLSTATE 22003), the connection kept ([DESIGN] D14).
+     */
+    @Test
+    void thirtyEightDigitsRoundTrip() throws SQLException, IOException {
+        java.math.BigDecimal widest = new java.math.BigDecimal("1234567890123456789012345678.9012345678");
+        java.math.BigDecimal whole = new java.math.BigDecimal("9".repeat(38));
+        try (Connection c = LiveJdbc.connect()) {
+            LiveJdbc.run(c, "CREATE TABLE JDBC_WIDE (D DECIMAL(38,10), N NUMERIC(38))");
+            try (PreparedStatement p = c.prepareStatement("INSERT INTO JDBC_WIDE VALUES (?, ?)")) {
+                p.setBigDecimal(1, widest);
+                p.setBigDecimal(2, whole.negate());
+                assertEquals(1, p.executeUpdate());
+                p.setBigDecimal(1, widest);
+                p.setBigDecimal(2, new java.math.BigDecimal("1" + "0".repeat(38)));
+                assertEquals(
+                        "22003",
+                        assertThrows(SQLException.class, p::executeUpdate).getSQLState(),
+                        "39 digits");
+            }
+            try (PreparedStatement q = c.prepareStatement("SELECT D, N, CAST(? AS NUMERIC(38)) FROM JDBC_WIDE")) {
+                q.setBigDecimal(1, whole);
+                try (ResultSet rs = q.executeQuery()) {
+                    assertTrue(rs.next());
+                    assertEquals(widest, rs.getBigDecimal(1));
+                    assertEquals(whole.negate(), rs.getBigDecimal(2));
+                    assertEquals(whole, rs.getBigDecimal(3));
+                    assertEquals(38, rs.getMetaData().getPrecision(2));
+                }
+            }
+            java.util.Map<String, Integer> precisions = new java.util.HashMap<>();
+            try (ResultSet types = c.getMetaData().getTypeInfo()) {
+                while (types.next()) {
+                    precisions.put(types.getString("TYPE_NAME"), types.getInt("PRECISION"));
+                }
+            }
+            assertEquals(38, precisions.get("NUMERIC"));
+            assertEquals(38, precisions.get("DECIMAL"));
+            assertEquals(18, precisions.get("BIGINT"));
+        }
+    }
 }

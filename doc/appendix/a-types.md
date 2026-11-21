@@ -57,7 +57,7 @@ and written by each value ([PROTOCOL Values]).
 |---|---|---|---|
 | 0 | null | `Value.NULL` | unknown, of a truth value too |
 | 1 | character string | `Value.Text`, a `String` | of either character type; UTF-8, a string that is not Unicode refused |
-| 2 | exact number | `Value.Exact`: units `BigInteger`, scale `long`; `toBigDecimal()` | units -2^127 to 2^127 - 1, scale 0 to 4294967295, every one kept; a `BigDecimal` holds a scale to 2147483647 |
+| 2 | exact number | `Value.Exact`: units `BigInteger`, scale `long`; `toBigDecimal()` | units -2^127 to 2^127 - 1, scale 0 to 4294967295, every one kept; a `BigDecimal` holds a scale to 2147483647; Turborel holds at most 38 digits, and refuses more (SQLSTATE 22003) |
 | 3 | approximate number | `Value.Approximate`, a `double` | its bits kept, NaN's and -0.0's too |
 | 4 | a plug-in's value | `OctetValue.Plugin`: type name, text, bytes | kept as it came, and sent back unchanged |
 | 6 | binary string | `OctetValue.Binary` | of either binary type |
