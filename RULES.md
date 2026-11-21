@@ -244,7 +244,7 @@ The tools named by "the formatter", "the linters", "the type checker" and
 | R-PROC-4 | A threshold change **shall** change RULES.md and the configuration that holds it together. | review |
 | R-PROC-5 | Project automation **shall** be written in the language's own tooling, never shell scripts; the git hook only hands over to the checks tool. | review |
 | R-PROC-6 | CI's actions **shall** be pinned by their full commit SHA, with the version in a comment. | review |
-| R-PROC-7 | A release **shall** be published only as VERSIONING.md says, by the owner (D5). | review |
+| R-PROC-7 | A release **shall** be published only as VERSIONING.md says, by a maintainer (D5). | review |
 
 The review checklist:
 
@@ -390,7 +390,7 @@ is 0.0.0, as Turborel's is, and speaks protocol version 1.
 
 The number is written once, in `build.gradle.kts`'s `version`. Nothing is
 published, and no release is tagged, until every Turborel driver is
-done; then the owner publishes them together (VERSIONING.md).
+done; then the maintainers publish them together (VERSIONING.md).
 
 #### D6. Tests and code cite Turborel's documents by their headings
 
@@ -533,7 +533,7 @@ module `com.turborel.jdbc`, under the package `com.turborel.jdbc`. It is
 published with its sources and Javadoc jars and a POM that names the
 license, BSD-2-Clause-Patent, the project's URL and its source control,
 as Maven Central requires. Each jar carries `LICENSE` in `META-INF`.
-Until the owner publishes, the build stages a release in
+Until the drivers are published, the build stages a release in
 `build/staging-deploy` and nothing leaves the machine.
 
 #### D12. Tests are JUnit Jupiter's, in the packages they test

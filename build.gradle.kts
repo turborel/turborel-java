@@ -284,7 +284,7 @@ publishing {
         }
     }
     // Publishing writes to a directory in the build, and nothing leaves the
-    // machine: the release workflow uploads it only once the owner enables
+    // machine: the release workflow uploads it only once a maintainer enables
     // that step (VERSIONING.md).
     repositories {
         maven {

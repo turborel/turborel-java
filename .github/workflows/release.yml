@@ -1,6 +1,6 @@
 # Builds and checks a release, and keeps what would be published as the
 # run's artifact. It publishes nothing: its last step is written but
-# disabled until the owner publishes every turborel driver together
+# disabled until the maintainers publish every turborel driver together
 # (VERSIONING.md, RULES.md D5, R-PROC-7). Run by hand alone.
 name: release
 
@@ -40,7 +40,7 @@ jobs:
         with:
           name: staging-deploy
           path: build/staging-deploy/
-      # Disabled: the owner enables this step, by removing its `if`, when the
+      # Disabled: a maintainer enables this step, by removing its `if`, when the
       # drivers are published, gives the job `contents: write` so it can push
       # the tag, and first gives the repository the three secrets it names.
       # It tags the release with exactly the tag Turborel's own release uses,
