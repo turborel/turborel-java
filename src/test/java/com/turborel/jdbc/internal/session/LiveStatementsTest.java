@@ -341,4 +341,26 @@ class LiveStatementsTest {
             statements.query("ROLLBACK");
         }
     }
+
+    /**
+     * Verifies: [PROTOCOL Query 'Q'] a query that fails before its first batch is sent, dividing by
+     * zero at its first row, is answered by its Error alone: no Description, so a sink is given no
+     * columns and no rows, and the connection goes on.
+     */
+    @Test
+    void aQueryFailingBeforeItsFirstBatchGivesItsErrorAlone() throws TurborelException, IOException {
+        try (Connection connection = connected()) {
+            Statements statements = connection.statements();
+            statements.query("CREATE TABLE FIRST_FAILS (N INTEGER)");
+            statements.query("INSERT INTO FIRST_FAILS VALUES (0)");
+            Script.Recorded sink = new Script.Recorded();
+            TurborelException failed = assertThrows(
+                    TurborelException.class, () -> statements.queryInto("SELECT 1 / N FROM FIRST_FAILS", sink));
+            assertEquals("22012", failed.getSQLState());
+            assertTrue(sink.columns.isEmpty(), "no Description");
+            assertTrue(sink.batches.isEmpty(), "no Rows");
+            assertFalse(connection.isLost());
+            statements.query("ROLLBACK");
+        }
+    }
 }
