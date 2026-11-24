@@ -48,7 +48,8 @@ public interface TurborelDebugger {
 ```
 
 The low-level client's `Connection.debugger()` gives the same requests,
-`Debugger`, over the codec's own types (RULES.md D2).
+`Debugger`, over the codec's own types (RULES.md D2), in
+[Debugging Routines](31-debugging.md).
 
 ## DESCRIPTION
 
@@ -147,4 +148,5 @@ RAISE_PAY line 4, [Variable[name=PCT, type=INTEGER, value=10]]
 ## SEE ALSO
 
 [Connection](02-api-connection.md),
-[Debugging Routines](../user/11-debugging.md)
+[Debugging Routines](31-debugging.md) of the low-level client,
+[Debugging Routines](../user/11-debugging.md) in the User's Guide

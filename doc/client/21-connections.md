@@ -126,7 +126,7 @@ session by `unwrap(TurborelConnection.class)`
 [Statements and Cursors](22-statements.md), with what `told()` gives of
 a completion, and `controls()` several statements in one request and
 query attributes too; `debugger()`, the routine debugger *(extension)*, in
-[Debugger](07-api-debugger.md).
+[Debugging Routines](31-debugging.md).
 
 ## DESCRIPTION
 
