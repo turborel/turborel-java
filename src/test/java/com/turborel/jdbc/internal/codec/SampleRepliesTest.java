@@ -192,15 +192,16 @@ class SampleRepliesTest {
         r.put("status-owner", new Reply.Status("OWNER", "YES"));
         r.put("status-time-zone", new Reply.Status("SESSION.TIME_ZONE", "+05:30"));
         r.put("status-null", new Reply.Status("STATEMENT.TIMEOUT_MS", ""));
+        debugged(r);
         return r;
     }
 
     /**
      * Verifies: [PROTOCOL Sample frames] every server frame of a reply decodes to what its meaning
      * says, the capabilities it needs granted: the opening's, a statement's and its completion's
-     * with each tail field, failures with and without their diagnostics, notices, large objects
-     * and each Status; none is left unchecked, each data type and value tag aside, which have
-     * their own test.
+     * with each tail field, failures with and without their diagnostics, notices, large objects,
+     * each Status, and the debugger's Debugged and Event ([PROTOCOL Debug 'V']); none is left
+     * unchecked, each data type and value tag aside, which have their own test.
      */
     @Test
     void everyReplyDecodesAsItsMeaningSays() throws TurborelException {
@@ -214,5 +215,30 @@ class SampleRepliesTest {
             SampleFrames.Sample sample = SampleFrames.in(samples, each.getKey());
             assertEquals(each.getValue(), ReplyCodec.decode(sample.kind(), sample.body()), each.getKey());
         }
+    }
+
+    /** The debugger's replies and events, by name. */
+    private static void debugged(Map<String, Reply> r) {
+        TypeName raise = new TypeName("ANN", "RAISE_PAY");
+        Debugging.Breakpoint first = new Debugging.Breakpoint(1, raise, 4, null);
+        Debugging.Frame frame = new Debugging.Frame(
+                new Debugging.Origin(Debugging.Kind.PROCEDURE, raise, raise),
+                true,
+                1L,
+                4L,
+                3L,
+                List.of(new Debugging.Named("PCT", "INTEGER", new Value.Exact(BigInteger.TEN, 0))),
+                List.of(new Debugging.Named("N", "INTEGER", Value.NULL)),
+                List.of(new Debugging.Cursor("C", false, "SELECT ID FROM STAFF")));
+        Debugging.Paused paused = new Debugging.Paused(1L, List.of(frame));
+        r.put("debugged-connection", new Reply.Debugged(new Debugging.Answer.Connection(2)));
+        r.put("debugged-breakpoint", new Reply.Debugged(new Debugging.Answer.Set(first)));
+        r.put("debugged-breakpoints", new Reply.Debugged(new Debugging.Answer.Listed(List.of(first))));
+        r.put("debugged-running", new Reply.Debugged(new Debugging.Answer.Stack(null)));
+        r.put("debugged-stack", new Reply.Debugged(new Debugging.Answer.Stack(paused)));
+        r.put("event-paused", new Reply.Event(new Debugging.Event.Pause(paused)));
+        r.put("event-timed-out", new Reply.Event(new Debugging.Event.TimedOut()));
+        r.put("event-cancelled", new Reply.Event(new Debugging.Event.Cancelled()));
+        r.put("event-ended", new Reply.Event(new Debugging.Event.Ended()));
     }
 }

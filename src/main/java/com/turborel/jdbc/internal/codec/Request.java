@@ -27,7 +27,8 @@ public sealed interface Request
                 Request.CopyIn,
                 Request.CopyData,
                 Request.CopyEnd,
-                LobRequest {
+                LobRequest,
+                DebugRequest {
     // [PROTOCOL Requests]: the kinds, read in the direction they travel.
     /** Hello. */
     byte HELLO = 'H';
@@ -65,6 +66,8 @@ public sealed interface Request
     byte COPY_DATA = 'J';
     /** CopyEnd. */
     byte COPY_END = 'N';
+    /** Debug *(extension)*. */
+    byte DEBUG = 'V';
 
     /** The protocol's version, the first field of Hello: 1, the only version. */
     long VERSION = 1;

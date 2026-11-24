@@ -33,6 +33,10 @@ public sealed interface Reply {
     byte STATUS = 'T';
     /** Pong. */
     byte PONG = 'G';
+    /** Debugged *(extension)*. */
+    byte DEBUGGED = 'V';
+    /** Event *(extension)*. */
+    byte EVENT = 'W';
 
     /**
      * Challenge: the next step of an authentication exchange.
@@ -186,4 +190,19 @@ public sealed interface Reply {
 
     /** Pong, with {@code ping}: the answer to Ping. */
     record Pong() implements Reply {}
+
+    /**
+     * Debugged: what a Debug request gave back, but a completion *(extension)*.
+     *
+     * @param answer what it gave
+     */
+    record Debugged(Debugging.Answer answer) implements Reply {}
+
+    /**
+     * Event: what a debugger hears of its target, sent unasked, only between requests
+     * *(extension)*.
+     *
+     * @param event what it hears
+     */
+    record Event(Debugging.Event event) implements Reply {}
 }

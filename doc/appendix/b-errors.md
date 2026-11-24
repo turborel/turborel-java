@@ -44,6 +44,7 @@ classes itself:
 | class 28, SQLCODE -919 | Credentials refused: the connection is lost, at a login or a change of user |
 | TB920 | SQLCODE -920: the statement was cancelled; the session goes on |
 | TBR01 | SQLCODE -920: a replica had not applied REPLICATION.READ_AFTER's position in time; the session goes on |
+| TBD01 | SQLCODE -910: a request of the routine debugger *(extension)* its target's state does not allow; the session goes on ([Debugger](../client/07-api-debugger.md)) |
 
 Every other code is the statement's failure, and the session goes on.
 Turborel's own manual lists the codes its server gives, in its

@@ -17,6 +17,7 @@ public interface TurborelConnection extends java.sql.Connection {
     Map<String, String> sessionStatus() throws SQLException;
     Long commitPosition() throws SQLException;                       // or null
     Set<String> granted() throws SQLException;
+    TurborelDebugger debugger() throws SQLException;
 }
 ```
 
@@ -63,6 +64,8 @@ SERVER_VERSION, TRANSACTION.ISOLATION, or any other it sent; with no
 name, all of them. `commitPosition` gives the log position of the last
 commit a statement of the connection made, granted `commit-position`;
 `granted` the capabilities the server granted, by their protocol names.
+`debugger` gives the routine debugger *(extension)* of the connection,
+granted `debugger` ([Debugger](07-api-debugger.md)).
 
 **Checking and timeouts.** `isValid` sends Ping, granted `ping`, else
 the query VALUES 1; it is true if the server answered within the
@@ -145,4 +148,4 @@ true 2
 ## SEE ALSO
 
 [Driver](01-api-driver.md), [Statement](03-api-statements.md),
-[Connections](21-connections.md)
+[Debugger](07-api-debugger.md), [Connections](21-connections.md)

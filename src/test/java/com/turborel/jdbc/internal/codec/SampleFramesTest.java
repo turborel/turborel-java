@@ -120,10 +120,25 @@ class SampleFramesTest {
                         List.of(new Value.Text("1"), Value.NULL), List.of(new Value.Text("2"), new Value.Text("b")))));
         r.put("copy-end", new Request.CopyEnd(false));
         r.put("copy-end-abandon", new Request.CopyEnd(true));
+        debugs(r);
+    }
+
+    private static void debugs(Map<String, Request> r) {
+        r.put("debug-identify", new DebugRequest.Identify());
+        r.put("debug-attach", new DebugRequest.Attach(2));
+        r.put("debug-detach", new DebugRequest.Detach());
+        r.put(
+                "debug-break",
+                new DebugRequest.Break(Debugging.Kind.PROCEDURE, new TypeName("ANN", "RAISE_PAY"), 4, "PCT > 5"));
+        r.put("debug-clear", new DebugRequest.Clear(1));
+        r.put("debug-breakpoints", new DebugRequest.Breakpoints());
+        r.put("debug-resume", new DebugRequest.Resume(Debugging.Action.OVER));
+        r.put("debug-interrupt", new DebugRequest.Interrupt());
+        r.put("debug-stack", new DebugRequest.Stack());
     }
 
     /**
-     * Verifies: [PROTOCOL Sample frames] every line of the file, at 1afa44c2, is read as the page
+     * Verifies: [PROTOCOL Sample frames] every line of the file, at 5863fe65, is read as the page
      * lays it out: five fields apart by one tab, a direction of client or server, a name unique
      * in the file, needs of - or capabilities the protocol names, the whole frame in upper-case
      * hexadecimal, its header's length its body's, and a meaning; every request and reply kind is
@@ -132,7 +147,7 @@ class SampleFramesTest {
     @Test
     void everyLineIsAsThePageLaysItOut() throws TurborelException {
         List<String[]> lines = SampleFrames.lines();
-        assertTrue(lines.size() >= 140, "148 frames at 1afa44c2");
+        assertTrue(lines.size() >= 140, "166 frames at 5863fe65");
         Set<String> names = new HashSet<>();
         Set<String> kinds = new HashSet<>();
         for (String[] f : lines) {
@@ -153,10 +168,10 @@ class SampleFramesTest {
         }
         assertEquals(names, SampleFrames.all().keySet());
         Set<String> every = new HashSet<>();
-        for (char kind : "HAZQPEFCDXLYGWUIJNz".toCharArray()) {
+        for (char kind : "HAZQPEFCDXLYGWUIJNVz".toCharArray()) {
             every.add("client " + kind);
         }
-        for (char kind : "CRPDBSKELNGTz".toCharArray()) {
+        for (char kind : "CRPDBSKELNGTVWz".toCharArray()) {
             every.add("server " + kind);
         }
         assertEquals(every, kinds, "every request and reply kind");

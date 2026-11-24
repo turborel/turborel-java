@@ -57,6 +57,7 @@ Each is told in full in [§7](#7-the-decisions).
 | D12 | Tests are JUnit Jupiter's, in the packages they test |
 | D13 | TLS is the JDK's, and the platform's authorities are the JDK's trusted ones |
 | D14 | JDBC's types are mapped from each column's declared type, else as the server sends it |
+| D15 | The routine debugger is the driver's own interface, reached through `TurborelConnection` |
 
 ---
 
@@ -419,7 +420,7 @@ a test cites by its Javadoc comment, beginning `Verifies:`.
 
 The protocol's sample frames, `doc/client/05-protocol-frames.tsv`, are
 copied into the tests' resources at a commit of Turborel's main, at
-1afa44c2 now, beside the code that reads them
+5863fe65 now, beside the code that reads them
 (`src/test/resources/com/turborel/jdbc/internal/codec`). Copying them,
 rather than reading main's file as the tests run, keeps each run's
 outcome the commit's own; a change of the file comes in a commit that
@@ -597,6 +598,23 @@ DatabaseMetaData reads the Information Schema, which names each
 column's type, so `getColumns` gives INTEGER, SMALLINT and BIGINT as
 JDBC numbers them. A type JDBC has no number for, an interval, JSON, a
 UUID or a multiset, is `Types.OTHER`, under its SQL name.
+
+#### D15. The routine debugger is the driver's own interface, reached through `TurborelConnection`
+
+Turborel's routine debugger *(extension)* drives the routines another
+connection's session runs (`[CLIENT Debugging routines]`), and JDBC has
+no place for it. So the driver gives it as `TurborelDebugger`, in the
+exported package, reached as JDBC 4.3 reaches a driver's own interfaces:
+`connection.unwrap(TurborelConnection.class).debugger()`. Its methods
+are turborel-client's, named in Java's style: `id`, `attach`, `detach`,
+`setBreakpoint` with an optional condition, `clearBreakpoint`,
+`breakpoints`, `waitForEvent` with a timeout, `stack`, `resume` by a
+`Step` (into, over, out or continue) and `interrupt`. Its frames,
+breakpoints and events are its own records, so a program needs nothing
+of the packages the module does not export, and a frame's values are
+the objects `getObject` gives. A failure is the driver's as ever (D9).
+An Event the server sends unasked is kept wherever a reply is read, and
+`waitForEvent` takes it.
 
 ---
 

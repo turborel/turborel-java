@@ -109,6 +109,29 @@ final class Wire {
     }
 
     /**
+     * Whether a frame begins to arrive before the stream's read timeout runs out: nothing of it
+     * read, so it is read whole after.
+     *
+     * @return whether one arrives
+     * @throws TurborelException a connection failure if the stream closed or failed
+     */
+    boolean arrives() throws TurborelException {
+        try {
+            in.mark(1);
+            int first = in.read();
+            in.reset();
+            if (first < 0) {
+                throw Io.failed("receive", new IOException("the connection closed"));
+            }
+            return true;
+        } catch (java.net.SocketTimeoutException quiet) {
+            return false;
+        } catch (IOException e) {
+            throw Io.failed("receive", e);
+        }
+    }
+
+    /**
      * What is left to read, to the end of the stream, of at most {@code most} bytes.
      *
      * @param most the most read

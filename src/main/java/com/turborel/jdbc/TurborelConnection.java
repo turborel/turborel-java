@@ -48,4 +48,12 @@ public interface TurborelConnection extends Connection {
      * @throws SQLException SQLSTATE TB910 if the connection is closed
      */
     Set<String> granted() throws SQLException;
+
+    /**
+     * This connection's routine debugger *(extension)*, granted {@code debugger} ([DESIGN] D15).
+     *
+     * @return the debugger
+     * @throws SQLException SQLSTATE TB910 if the connection is closed
+     */
+    TurborelDebugger debugger() throws SQLException;
 }

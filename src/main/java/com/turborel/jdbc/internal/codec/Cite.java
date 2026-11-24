@@ -26,6 +26,9 @@ public final class Cite {
     /** The section "The tail". */
     public static final String TAIL = "[PROTOCOL The tail]";
 
+    /** The debugger's messages *(extension)*. */
+    public static final String DEBUG = "[PROTOCOL Debug 'V']";
+
     /** Parameter modes, tail 20 of a Prepared. */
     public static final String MODES = "[PROTOCOL Parameter modes]";
 

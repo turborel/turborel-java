@@ -41,6 +41,19 @@ final class Receiver {
         }
     }
 
+    /**
+     * The next reply as it comes, decoded but not taken: a Notice, a Status or an Event among them,
+     * as a debugger waiting for its target's events reads it. A value it holds the client cannot
+     * take fails it alone, nothing more read past.
+     *
+     * @return the reply
+     * @throws TurborelException a connection failure, which loses the connection; a value's own
+     */
+    Reply single() throws TurborelException {
+        Frames.Frame frame = frame();
+        return decoded(frame.kind(), frame.body().toByteArray(), false);
+    }
+
     /** The next frame whole, the connection lost if none comes. */
     private Frames.Frame frame() throws TurborelException {
         try {
@@ -54,7 +67,9 @@ final class Receiver {
 
     /** Takes a Notice or a Status, and says whether it was one. */
     private boolean took(Reply reply) {
-        if (reply instanceof Reply.Notice notice) {
+        if (reply instanceof Reply.Event event) {
+            connection.told().event(event.event());
+        } else if (reply instanceof Reply.Notice notice) {
             connection.told().notice(notice);
         } else if (reply instanceof Reply.Status status) {
             connection.told().status(status.name(), status.value());

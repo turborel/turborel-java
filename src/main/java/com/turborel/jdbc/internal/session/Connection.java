@@ -50,6 +50,7 @@ public final class Connection implements AutoCloseable {
     private long nextStatement;
     private final Statements statements = new Statements(this);
     private final Controls controls = new Controls(this, statements);
+    private final Debugger debugger = new Debugger(this, statements);
     private final Lobs lobs = new Lobs(this);
     private final Bulk bulk = new Bulk(this);
     private final Receiver receiver = new Receiver(this);
@@ -87,9 +88,8 @@ public final class Connection implements AutoCloseable {
 
     /**
      * Opens a connection over a stream the program made, as {@link #open} does, its waits bounded
-     * on the stream itself as {@code timeouts} say: each step of the login by {@code connect},
-     * each read after by {@code read}, and Terminate's answer by {@code read}, else 60 seconds. Its
-     * read timeout can then be changed as a connection's ([CLIENT Timeouts]).
+     * on it as {@code timeouts} say, its read timeout then changed as a connection's ([CLIENT
+     * Timeouts]).
      *
      * @param duplex the stream, which bounds its own waits
      * @param login the user and what proves it
@@ -228,12 +228,10 @@ public final class Connection implements AutoCloseable {
     }
 
     /**
-     * Whether each statement run, executed or queried is its own transaction from now on, if
-     * {@code on} ([CLIENT Running statements]): the server commits it once the statement succeeds,
-     * or rolls it back if it fails, within the request, so no COMMIT is sent. Off as a connection
-     * opens: a transaction begins with the first statement and lasts until COMMIT or ROLLBACK. A
-     * cursor is read within its transaction, which ends as the cursor does if the server granted
-     * {@code fetch-ends}.
+     * Whether each statement is its own transaction from now on, if {@code on} ([CLIENT Running
+     * statements]): the server commits it as it succeeds, or rolls it back, within the request. Off
+     * as a connection opens, a transaction lasting from its first statement to COMMIT or ROLLBACK.
+     * A cursor is read within its transaction, which ends with it, granted {@code fetch-ends}.
      *
      * @param on whether each statement is its own transaction
      */
@@ -276,6 +274,15 @@ public final class Connection implements AutoCloseable {
      */
     public Controls controls() {
         return controls;
+    }
+
+    /**
+     * What debugs another connection's session's routines, granted {@code debugger}.
+     *
+     * @return its debugger
+     */
+    public Debugger debugger() {
+        return debugger;
     }
 
     /**
@@ -478,9 +485,8 @@ public final class Connection implements AutoCloseable {
     }
 
     /**
-     * Sends a request, compressed once compression is granted. A request the codec refuses, as one
-     * of more attributes than a message takes, is refused before anything is sent, and the
-     * connection kept.
+     * Sends a request, compressed once compression is granted. One the codec refuses, as of too many
+     * attributes, is refused before anything is sent, the connection kept.
      *
      * @param request the request
      * @throws TurborelException the codec's refusal; the failure that lost the connection, before
@@ -540,6 +546,11 @@ public final class Connection implements AutoCloseable {
      */
     Reply receiveOne() throws TurborelException {
         return receiver.receive(false);
+    }
+
+    /** What reads its replies, as a debugger waiting for an Event reads one. */
+    Receiver receiver() {
+        return receiver;
     }
 
     /** Notes a statement ended: whether a transaction goes on, and the warning it completed with. */

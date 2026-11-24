@@ -543,6 +543,12 @@ final class JdbcConnection implements TurborelConnection {
     }
 
     @Override
+    public TurborelDebugger debugger() throws SQLException {
+        open();
+        return new JdbcDebugger(this);
+    }
+
+    @Override
     public Set<String> granted() throws SQLException {
         open();
         return Set.copyOf(session.granted());

@@ -36,7 +36,7 @@ public final class ReplyCodec {
 
     /**
      * Whether a reply of {@code kind} and {@code body} is its request's last, by the order a
-     * statement's replies keep: a Description, Rows, a Notice or a Status has more after it, a
+     * statement's replies keep: a Description, Rows, a Notice, a Status or an Event has more after it, a
      * Complete has if its tail says more (tag 5), and any other reply is the last. So a request
      * whose reply held a value the client cannot take is read past to its end ([PROTOCOL Values
      * and fields]).
@@ -47,7 +47,7 @@ public final class ReplyCodec {
      */
     public static boolean endsRequest(byte kind, byte[] body) {
         return switch (kind) {
-            case Reply.DESCRIPTION, Reply.ROWS, Reply.NOTICE, Reply.STATUS -> false;
+            case Reply.DESCRIPTION, Reply.ROWS, Reply.NOTICE, Reply.STATUS, Reply.EVENT -> false;
             case Reply.COMPLETE -> {
                 Completed head = completedHead(kind, body);
                 yield head == null || !head.fields().more();
@@ -106,6 +106,8 @@ public final class ReplyCodec {
             case Reply.NOTICE -> notice(r);
             case Reply.STATUS -> new Reply.Status(r.string(), r.string());
             case Reply.PONG -> new Reply.Pong();
+            case Reply.DEBUGGED -> new Reply.Debugged(Debugging.answer(r));
+            case Reply.EVENT -> new Reply.Event(Debugging.event(r));
             default -> throw Broken.connection(Cite.FRAMES + " no reply is of kind " + Byte.toUnsignedInt(kind));
         };
     }

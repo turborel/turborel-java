@@ -27,7 +27,7 @@ turborel-client, does: TCP, Unix sockets and Windows named pipes, TLS,
 SCRAM-SHA-256 and SCRAM-SHA-256-PLUS, prepared statements and cursors,
 large objects, bulk copy, import and export, settings from a URI, the
 environment and service and password files, several servers, pipelines
-and pools.
+and pools, and the routine debugger *(extension)*.
 
 The driver is built in milestones, M0 to M8. Its low-level client
 connects, runs and prepares statements, controls its session, reads and
@@ -35,7 +35,9 @@ writes large objects, copies, imports and exports rows, and connects by
 settings to one of several servers, pipelines requests, pools
 connections and holds an SQL-agent's named connections; and over it
 JDBC 4.3's driver, connections, statements, result sets and metadata
-serve programs and database tools, DBeaver and DataGrip among them.
+serve programs and database tools, DBeaver and DataGrip among them. What
+JDBC has no place for, as the routine debugger, is the driver's own
+interface, reached through `TurborelConnection`.
 [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by row, and
 [TODO.md](TODO.md) what is open.
 

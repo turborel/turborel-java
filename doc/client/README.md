@@ -14,6 +14,7 @@ The standard API, then the low-level client beneath it, a page for each main int
 - [ResultSet and Metadata](04-api-result-sets.md)
 - [DatabaseMetaData](05-api-database-metadata.md)
 - [DataSource](06-api-data-source.md)
+- [Debugger](07-api-debugger.md) *(extension)*
 
 ### The low-level client
 

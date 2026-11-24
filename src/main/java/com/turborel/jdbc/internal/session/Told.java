@@ -3,6 +3,7 @@ package com.turborel.jdbc.internal.session;
 import com.turborel.jdbc.TurborelException;
 import com.turborel.jdbc.internal.codec.Attribute;
 import com.turborel.jdbc.internal.codec.Completed;
+import com.turborel.jdbc.internal.codec.Debugging;
 import com.turborel.jdbc.internal.codec.Failure;
 import com.turborel.jdbc.internal.codec.Reply;
 import com.turborel.jdbc.internal.codec.Timing;
@@ -31,6 +32,7 @@ public final class Told {
     private Set<String> granted = Set.of();
     private final Map<String, String> settings = new HashMap<>();
     private final Deque<Reply.Notice> notices = new ArrayDeque<>();
+    private final Deque<Debugging.Event> events = new ArrayDeque<>();
     private @Nullable Consumer<Reply.Notice> handler;
     private @Nullable Long position;
     private Completed.@Nullable Fields completed;
@@ -67,6 +69,21 @@ public final class Told {
 
     Map<String, String> settings() {
         return Collections.unmodifiableMap(new HashMap<>(settings));
+    }
+
+    /** Keeps an Event the debugger's connection heard, until the debugger waits for it. */
+    void event(Debugging.Event event) {
+        events.addLast(event);
+    }
+
+    /** The oldest Event kept, taken; none if none is kept. */
+    Debugging.@Nullable Event takeEvent() {
+        return events.pollFirst();
+    }
+
+    /** The Events kept, dropped: of a target no longer debugged. */
+    void dropEvents() {
+        events.clear();
     }
 
     /** Takes a notice: to the handler, or kept, the oldest dropped past {@link #KEPT_NOTICES}. */

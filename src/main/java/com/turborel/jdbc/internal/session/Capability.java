@@ -50,6 +50,9 @@ public final class Capability {
     /** A Prepared of a CALL carries its procedure and each {@code ?}'s parameter mode, tail 20. */
     public static final String PARAMETER_MODES = "parameter-modes";
 
+    /** The request Debug, its answer Debugged, and the Event sent unasked *(extension)*. */
+    public static final String DEBUGGER = "debugger";
+
     /** Every capability of version 1, in the table's order. */
     public static final List<String> ALL = List.of(
             NOTICES,
@@ -71,7 +74,8 @@ public final class Capability {
             FETCH_ENDS,
             CONDITIONS,
             DECLARED_TYPES,
-            PARAMETER_MODES);
+            PARAMETER_MODES,
+            DEBUGGER);
 
     private Capability() {}
 }

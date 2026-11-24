@@ -43,6 +43,7 @@ public final class Connection implements AutoCloseable {
     public @Nullable Canceller canceller();
     public Statements statements();
     public Controls controls();
+    public Debugger debugger();
     public Told told();
     public void terminate() throws TurborelException;
     public boolean isLost();
@@ -124,7 +125,8 @@ session by `unwrap(TurborelConnection.class)`
 ([Connection](02-api-connection.md)). A connection's `statements()` are told in
 [Statements and Cursors](22-statements.md), with what `told()` gives of
 a completion, and `controls()` several statements in one request and
-query attributes too.
+query attributes too; `debugger()`, the routine debugger *(extension)*, in
+[Debugger](07-api-debugger.md).
 
 ## DESCRIPTION
 
