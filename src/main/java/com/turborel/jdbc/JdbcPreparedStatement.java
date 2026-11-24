@@ -49,7 +49,11 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
 
     JdbcPreparedStatement(JdbcConnection connection, String sql) throws SQLException {
         super(connection);
-        this.prepared = connection.session().statements().prepare(sql(sql));
+        try {
+            this.prepared = connection.session().statements().prepare(sql(sql));
+        } catch (SQLException failure) {
+            throw Errors.classed(failure);
+        }
         this.values = new Value[prepared.parameters().size()];
     }
 

@@ -53,7 +53,7 @@ class ConnectionStatementTest {
 
     /**
      * Verifies: [CLIENT The SQL-agent] a statement that begins as a connection statement and is
-     * not one: a syntax error (SQLCODE -102, SQLSTATE 2A000), a lexical one (-101), or an embedded
+     * not one: a syntax error (SQLCODE -102, SQLSTATE 42000), a lexical one (-101), or an embedded
      * variable, not supported (-900, 0A000).
      */
     @Test
@@ -73,7 +73,7 @@ class ConnectionStatementTest {
             TurborelException e =
                     assertThrows(TurborelException.class, () -> ConnectionStatement.of(each.getKey()), each.getKey());
             assertEquals(each.getValue(), e.getErrorCode(), each.getKey());
-            assertEquals(each.getValue() == -900 ? "0A000" : "2A000", e.getSQLState(), each.getKey());
+            assertEquals(each.getValue() == -900 ? "0A000" : "42000", e.getSQLState(), each.getKey());
         }
         for (String more : List.of("CONNECT TO \"a\"\"b\"", "DISCONNECT 1.5e3 ALL")) {
             assertEquals(

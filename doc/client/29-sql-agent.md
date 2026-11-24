@@ -71,9 +71,9 @@ the program made. `terminate` ends every connection.
 | -919 | 08003 | No connection of the name, or none current |
 | -917 | 25000 | DISCONNECT of a connection whose transaction is active |
 | 0 | 01002 | DISCONNECT of a connection that could not be ended: a warning, the connection gone still |
-| -103 | 2A000 | A name that is no character string literal, as a dynamic parameter |
-| -102 | 2A000 | A statement that begins as a connection statement and is not one |
-| -101 | 2A000 | A literal, a delimited identifier or a comment not closed |
+| -103 | 42000 | A name that is no character string literal, as a dynamic parameter |
+| -102 | 42000 | A statement that begins as a connection statement and is not one |
+| -101 | 42000 | A literal, a delimited identifier or a comment not closed |
 | -900 | 0A000 | An embedded variable, `:name` |
 
 ## EXAMPLES

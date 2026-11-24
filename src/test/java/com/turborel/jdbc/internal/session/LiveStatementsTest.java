@@ -72,7 +72,7 @@ class LiveStatementsTest {
             TurborelException failure =
                     assertThrows(TurborelException.class, () -> statements.query("SELECT * FROM NOPE"));
             assertEquals(-103, failure.sqlcode(), failure.getMessage());
-            assertEquals("2A000", failure.getSQLState(), failure.getMessage());
+            assertEquals("42000", failure.getSQLState(), failure.getMessage());
             assertNotNull(failure.rule(), "the rule it cites, apart");
             assertTrue(failure.position().isPresent(), "its position in the statement");
             assertFalse(connection.isLost(), "a statement's failure keeps the connection");

@@ -126,7 +126,7 @@ class LiveJdbcStatementTest {
             }
             s.setEscapeProcessing(false);
             assertEquals(
-                    "2A000",
+                    "42000",
                     assertThrows(SQLException.class, () -> s.executeQuery("VALUES {d '2026-01-02'}"))
                             .getSQLState());
             Statement once = c.createStatement();
@@ -337,16 +337,22 @@ class LiveJdbcStatementTest {
 
     /**
      * Verifies: [DESIGN] D9 a failure through JDBC is a TurborelException, its vendor code its
-     * SQLCODE: the server's, and the driver's own.
+     * SQLCODE: the server's, and the driver's own; a syntax error or access rule violation, class
+     * 42, is a SQLSyntaxErrorException of the same, the TurborelException its cause.
      */
     @Test
     void failuresCarryTheirSqlcode() throws SQLException, IOException {
         try (Connection c = LiveJdbc.connect();
                 Statement s = c.createStatement()) {
-            SQLException server = assertThrows(SQLException.class, () -> s.executeQuery("SELECT * FROM NO_SUCH_TABLE"));
+            SQLException server = assertThrows(SQLException.class, () -> s.executeQuery("VALUES 1 / 0"));
             TurborelException told = assertInstanceOf(TurborelException.class, server);
             assertEquals(told.sqlcode(), told.getErrorCode());
             assertTrue(told.getErrorCode() < 0);
+            SQLException syntax = assertThrows(SQLException.class, () -> s.executeQuery("SELECT * FROM NO_SUCH_TABLE"));
+            assertInstanceOf(java.sql.SQLSyntaxErrorException.class, syntax);
+            assertEquals("42000", syntax.getSQLState());
+            TurborelException cause = assertInstanceOf(TurborelException.class, syntax.getCause());
+            assertEquals(cause.sqlcode(), syntax.getErrorCode(), "its vendor code the SQLCODE");
             SQLException own = assertThrows(SQLException.class, () -> s.setFetchSize(-1));
             assertEquals(-910, assertInstanceOf(TurborelException.class, own).getErrorCode());
         }

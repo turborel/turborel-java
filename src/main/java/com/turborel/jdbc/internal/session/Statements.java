@@ -97,7 +97,7 @@ public final class Statements {
      *
      * @param sql the statement
      * @return the statement prepared
-     * @throws TurborelException the server's: SQLSTATE 37000 if it is not preparable, or a {@code
+     * @throws TurborelException the server's: SQLSTATE 42000 if it is not preparable, or a {@code
      *     ?} takes no type where it stands; a connection failure
      */
     public Statement prepare(String sql) throws TurborelException {

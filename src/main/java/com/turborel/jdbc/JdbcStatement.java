@@ -87,6 +87,8 @@ class JdbcStatement implements Statement {
         ScheduledFuture<?> timeout = Timeouts.start(connection.session().canceller(), queryTimeout);
         try {
             return run.run();
+        } catch (SQLException failure) {
+            throw Errors.classed(failure);
         } finally {
             Timeouts.stop(timeout);
             warnings = Errors.warnings(connection.session().told().takeConditions());

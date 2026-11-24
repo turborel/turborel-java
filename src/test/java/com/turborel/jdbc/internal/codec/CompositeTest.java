@@ -57,7 +57,7 @@ class CompositeTest {
     void failures() throws TurborelException {
         byte[] cited = cat(
                 u32(-103),
-                str("2A000"),
+                str("42000"),
                 str("table ANN.NOPE is not defined"),
                 u8(1),
                 str("X3.135-1986 §5.7 SR3b"),
@@ -66,7 +66,7 @@ class CompositeTest {
                 u8(0));
         Failure failure = Failure.read(reader(cited));
         assertEquals(
-                new Failure(-103, "2A000", "table ANN.NOPE is not defined", "X3.135-1986 §5.7 SR3b", 14L, false, null),
+                new Failure(-103, "42000", "table ANN.NOPE is not defined", "X3.135-1986 §5.7 SR3b", 14L, false, null),
                 failure);
         byte[] plain =
                 cat(u32(-911), str("TB911"), str(""), u8(0), u8(0), u8(1), u8(7), str("ERROR"), u8(12), str("T"));

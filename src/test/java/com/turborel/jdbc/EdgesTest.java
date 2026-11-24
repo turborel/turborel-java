@@ -343,4 +343,27 @@ class EdgesTest {
         byte[] check = new com.turborel.jdbc.internal.codec.Request.Query("VALUES 1", true, List.of(), false).encode();
         assertArrayEquals(check, java.util.Arrays.copyOfRange(sent, sent.length - check.length, sent.length));
     }
+
+    /**
+     * Verifies: [DESIGN] D9 a failure of SQLSTATE class 42, or the older 2A and 37, is thrown as a
+     * SQLSyntaxErrorException of its SQLSTATE, vendor code and message, its cause the failure; a
+     * failure of another class, or not the driver's, as it is.
+     */
+    @Test
+    void syntaxFailuresAreSqlSyntaxErrors() {
+        for (String state : List.of("42000", "2A000", "37000")) {
+            TurborelException failure = new TurborelException(-103, state, "no such table");
+            SQLException classed = Errors.classed(failure);
+            assertInstanceOf(java.sql.SQLSyntaxErrorException.class, classed, state);
+            assertEquals(state, classed.getSQLState());
+            assertEquals(-103, classed.getErrorCode());
+            assertEquals(failure, classed.getCause());
+        }
+        TurborelException data = new TurborelException(-301, "22012", "division by zero");
+        assertEquals(data, Errors.classed(data));
+        SQLException foreign = new SQLException("x", "42000");
+        assertEquals(foreign, Errors.classed(foreign));
+        SQLException none = new TurborelException(-1, "4", "short");
+        assertEquals(none, Errors.classed(none));
+    }
 }

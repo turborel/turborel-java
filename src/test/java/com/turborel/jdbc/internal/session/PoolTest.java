@@ -55,7 +55,7 @@ class PoolTest {
         Connection kept =
                 after(List.of(), complete(), error(-501, "34000"), complete(), complete(), complete(), complete());
         kept.nextStatement();
-        Connection failing = after(List.of(), complete(), error(-103, "2A000"), complete(), complete());
+        Connection failing = after(List.of(), complete(), error(-103, "42000"), complete(), complete());
         Connection last = after(List.of());
         Pool pool = new Pool(of(kept, failing, last), PoolConfig.defaults().withCheck(true));
         Pooled first = pool.get();

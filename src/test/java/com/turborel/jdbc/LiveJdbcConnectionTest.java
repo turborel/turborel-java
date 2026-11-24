@@ -255,7 +255,8 @@ class LiveJdbcConnectionTest {
     void aStatementIsPreparedAsItIsMade() throws SQLException, IOException {
         try (Connection c = LiveJdbc.connect()) {
             SQLException refused = assertThrows(SQLException.class, () -> c.prepareStatement("SELEKT 1"));
-            assertEquals("37000", refused.getSQLState());
+            assertEquals("42000", refused.getSQLState());
+            org.junit.jupiter.api.Assertions.assertInstanceOf(java.sql.SQLSyntaxErrorException.class, refused);
             try (PreparedStatement ok = c.prepareStatement("VALUES 1")) {
                 assertNotNull(ok.getMetaData());
             }

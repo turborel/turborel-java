@@ -97,7 +97,7 @@ class LiveAgentTest {
      * (08002), a connection statement in an active transaction (0A001), a user that is no
      * authorization identifier (28000), a server's address that is no identifier and no name given
      * (2E000), a server that cannot be reached (08001) or refuses (08004), no such connection
-     * (08003), a disconnect of an active transaction (25000), a dynamic parameter (2A000).
+     * (08003), a disconnect of an active transaction (25000), a dynamic parameter (42000).
      */
     @Test
     void theRulesOfEachStatement() throws TurborelException, IOException {
@@ -111,7 +111,7 @@ class LiveAgentTest {
             assertEquals("08004", state(() -> agent.query("CONNECT TO 'db' AS 'c' USER 'nobody'")));
             assertEquals("08003", state(() -> agent.query("SET CONNECTION 'nope'")));
             assertEquals("08003", state(() -> agent.query("DISCONNECT 'nope'")));
-            assertEquals("2A000", state(() -> agent.query("CONNECT TO ?")));
+            assertEquals("42000", state(() -> agent.query("CONNECT TO ?")));
             agent.current().setAutocommit(false);
             agent.query("VALUES 1");
             assertEquals("0A001", state(() -> agent.query("CONNECT TO 'db' AS 'c'")));

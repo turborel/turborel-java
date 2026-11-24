@@ -55,7 +55,7 @@ class AgentTest {
                 assertThrows(TurborelException.class, () -> agent.query("SET CONNECTION 'c 2'"))
                         .getSQLState());
         assertEquals(
-                "2A000",
+                "42000",
                 assertThrows(TurborelException.class, () -> agent.query("SET CONNECTION 7"))
                         .getSQLState());
         assertTrue(agent.connectionStatement("VALUES 1") == null);

@@ -37,7 +37,7 @@ sealed interface ConnectionStatement {
     int UNSUPPORTED = -900;
 
     /** The SQLSTATE of a syntax error or access rule violation in a direct SQL statement. */
-    String SYNTAX_ERROR = "2A000";
+    String SYNTAX_ERROR = "42000";
 
     /** The SQLSTATE of a feature not supported. */
     String NOT_SUPPORTED = "0A000";
@@ -105,7 +105,7 @@ sealed interface ConnectionStatement {
      * @param sql the statement
      * @return the connection statement, or none
      * @throws TurborelException it begins as one and is not one: a lexical error (SQLCODE -101), a
-     *     syntax error (-102), SQLSTATE 2A000; an embedded variable, SQLSTATE 0A000
+     *     syntax error (-102), SQLSTATE 42000; an embedded variable, SQLSTATE 0A000
      */
     static @Nullable ConnectionStatement of(String sql) throws TurborelException {
         Lexer lexer = new Lexer(sql);

@@ -2,7 +2,6 @@ package com.turborel.jdbc;
 
 import com.turborel.jdbc.internal.codec.Reply;
 import com.turborel.jdbc.internal.codec.Value;
-import com.turborel.jdbc.internal.session.Capability;
 import com.turborel.jdbc.internal.session.Connection;
 import java.sql.Array;
 import java.sql.Blob;
@@ -46,9 +45,6 @@ final class JdbcConnection implements TurborelConnection {
             TRANSACTION_READ_COMMITTED, "READ COMMITTED",
             TRANSACTION_REPEATABLE_READ, "REPEATABLE READ",
             TRANSACTION_SERIALIZABLE, "SERIALIZABLE");
-
-    /** What a connection checks it answers by, granted no Ping. */
-    private static final String CHECK = "VALUES 1";
 
     private final Connection session;
     private final String url;
@@ -111,7 +107,11 @@ final class JdbcConnection implements TurborelConnection {
     /** Runs {@code sql}, a statement of the driver's own, within the session's transaction. */
     void run(String sql) throws SQLException {
         open();
-        session.statements().query(sql);
+        try {
+            session.statements().query(sql);
+        } catch (SQLException failure) {
+            throw Errors.classed(failure);
+        }
     }
 
     private static void plain(int resultSetType, int resultSetConcurrency) throws SQLException {
@@ -443,46 +443,7 @@ final class JdbcConnection implements TurborelConnection {
         if (isClosed()) {
             return false;
         }
-        Duration before = session.readTimeout();
-        boolean limited = false;
-        try {
-            limited = timeout > 0 && bounded(Duration.ofSeconds(timeout));
-            if (session.granted().contains(Capability.PING)) {
-                session.controls().ping();
-            } else {
-                checked();
-            }
-            return true;
-        } catch (TurborelException failed) {
-            return false;
-        } finally {
-            if (limited && !session.isLost()) {
-                session.setReadTimeout(before);
-            }
-        }
-    }
-
-    /** The check without Ping: a query that, of no transaction active, ends with its statement. */
-    private void checked() throws TurborelException {
-        boolean on = session.autocommit();
-        if (!session.inTransaction()) {
-            session.setAutocommit(true);
-        }
-        try {
-            session.statements().query(CHECK);
-        } finally {
-            session.setAutocommit(on);
-        }
-    }
-
-    /** Bounds the session's reads by {@code within}, if its stream is the driver's to bound. */
-    private boolean bounded(Duration within) {
-        try {
-            session.setReadTimeout(within);
-            return true;
-        } catch (TurborelException programs) {
-            return false;
-        }
+        return Validity.answers(session, timeout);
     }
 
     @Override

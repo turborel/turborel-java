@@ -502,11 +502,15 @@ its diagnostics.
 A connection a peer's message broke fails with SQLCODE -919, SQLSTATE
 08006 (`internal.codec.Broken`), as Turborel's does.
 
-JDBC requires two failures of its own types, and the driver gives them,
+JDBC requires failures of its own types, and the driver gives them,
 each carrying the driver's SQLSTATE and SQLCODE: a batch that fails is a
 `BatchUpdateException` of every count, its cause the `TurborelException`
-of the first statement that failed; and `getParentLogger`, of a driver
-that logs nothing, is a `SQLFeatureNotSupportedException`.
+of the first statement that failed; a syntax error or access rule
+violation, SQLSTATE class 42 (and 2A and 37 of older servers), of a
+statement run or prepared, is a `SQLSyntaxErrorException` of its
+SQLSTATE, SQLCODE and message, its cause the `TurborelException` that
+carries all of it; and `getParentLogger`, of a driver that logs nothing,
+is a `SQLFeatureNotSupportedException`.
 
 #### D10. Gradle builds it, with JDK 17's compiler, and the checks run on JDK 21
 

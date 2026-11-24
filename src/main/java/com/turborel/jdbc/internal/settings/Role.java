@@ -40,11 +40,10 @@ public enum Role {
     private static final String PRIMARY = "PRIMARY";
 
     /**
-     * The SQLSTATE classes of a table that does not exist, as a server alone answers {@link
-     * #ROLE_QUERY}: of a syntax error or access rule violation, of a direct SQL statement or
-     * another.
+     * The SQLSTATE class of a table that does not exist, as a server alone answers {@link
+     * #ROLE_QUERY}: a syntax error or access rule violation, of a statement run or prepared.
      */
-    private static final List<String> NO_SUCH_TABLE_CLASSES = List.of("2A", "42");
+    private static final String NO_SUCH_TABLE_CLASS = "42";
 
     private final String words;
 
@@ -122,11 +121,8 @@ public enum Role {
      * @throws TurborelException the failure, of another
      */
     static Role failed(TurborelException failure) throws TurborelException {
-        String state = String.valueOf(failure.getSQLState());
-        for (String each : NO_SUCH_TABLE_CLASSES) {
-            if (state.startsWith(each)) {
-                return READ_WRITE;
-            }
+        if (String.valueOf(failure.getSQLState()).startsWith(NO_SUCH_TABLE_CLASS)) {
+            return READ_WRITE;
         }
         throw failure;
     }

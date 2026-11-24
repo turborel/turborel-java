@@ -102,6 +102,7 @@ sends a `Statement`'s SQL as it is. A named cursor is refused.
 | -920 | TB920 | A statement cancelled, by `cancel` or its timeout |
 | -900 | 0A000 | A named cursor; a parameter set or registered by its name; a REF, ROWID or DATALINK parameter |
 | | the server's | The statement's own failure; a batch's first, as a `BatchUpdateException` |
+| | 42000 | A syntax error or access rule violation, as a `SQLSyntaxErrorException`, its cause the `TurborelException` |
 
 ## EXAMPLES
 

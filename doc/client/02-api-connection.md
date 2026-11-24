@@ -94,7 +94,7 @@ closed too; a call that uses it then fails.
 | -910 | TB910 | A closed connection; `commit` or `rollback` under autocommit; a savepoint under autocommit, or another driver's; an isolation level JDBC does not name; a negative timeout; `abort` of no executor |
 | -919 | 08006 | A connection lost |
 | -900 | 0A000 | A `Struct`, a type map that maps a type, a result set not forward-only and read-only, a cursor held over a commit |
-| | the server's | A statement the connection sends for the program, such as COMMIT or SET SCHEMA |
+| | the server's | A statement the connection sends for the program, such as COMMIT or SET SCHEMA; of class 42, a `SQLSyntaxErrorException`, its cause the `TurborelException` |
 
 ## EXAMPLES
 

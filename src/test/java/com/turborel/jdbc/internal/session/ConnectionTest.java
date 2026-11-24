@@ -227,7 +227,7 @@ class ConnectionTest {
                 'E',
                 new Writer()
                         .bits32(-103)
-                        .string("2A000")
+                        .string("42000")
                         .string("no such table")
                         .flag(true)
                         .string("§5.7")

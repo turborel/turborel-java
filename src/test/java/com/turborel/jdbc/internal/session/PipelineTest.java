@@ -72,7 +72,7 @@ class PipelineTest {
     @Test
     void skipSettlesAsTheFailureFalls() throws TurborelException {
         try (Connection first =
-                after(List.of(), error(-103, "2A000"), complete(), complete(), complete(), complete())) {
+                after(List.of(), error(-103, "42000"), complete(), complete(), complete(), complete())) {
             List<Pipeline.Piped> outcomes = first.pipeline()
                     .onError(Pipeline.OnError.SKIP)
                     .query("A")
@@ -80,7 +80,7 @@ class PipelineTest {
                     .run();
             assertEquals("FS", kinds(outcomes));
         }
-        try (Connection last = after(List.of(), complete(), complete(), error(-103, "2A000"), complete())) {
+        try (Connection last = after(List.of(), complete(), complete(), error(-103, "42000"), complete())) {
             assertEquals(
                     "DF",
                     kinds(last.pipeline()
@@ -89,7 +89,7 @@ class PipelineTest {
                             .query("B")
                             .run()));
         }
-        try (Connection savepoint = after(List.of(), complete(), error(-103, "2A000"), complete())) {
+        try (Connection savepoint = after(List.of(), complete(), error(-103, "42000"), complete())) {
             assertEquals(
                     "DS",
                     kinds(savepoint

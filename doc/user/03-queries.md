@@ -74,7 +74,7 @@ try {
 
 ```
 0 00000, rows 2
--103 2A000: table ANN.NOPE is not defined
+-103 42000: table ANN.NOPE is not defined
 rule X3.135-1986 §5.4 SR5, at character 14
 ```
 

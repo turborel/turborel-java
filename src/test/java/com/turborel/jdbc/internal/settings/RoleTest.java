@@ -18,7 +18,7 @@ class RoleTest {
     }
 
     /**
-     * Verifies: [CLIENT Several servers] a server alone, which has no REPLICAS (class 2A or 42),
+     * Verifies: [CLIENT Several servers] a server alone, which has no REPLICAS (class 42),
      * takes changes; of a replica, PRIMARY is read-write, BACKUP or UNKNOWN read-only; no row, as a
      * session not the owner's sees, is unknown; another failure is the query's; the session status
      * YES is read-only, another read-write.
@@ -26,7 +26,6 @@ class RoleTest {
     @Test
     void aServersRoleIsReadFromReplicas() throws TurborelException {
         assertEquals(Role.READ_WRITE, Role.failed(new TurborelException(-101, "42000", "no table")));
-        assertEquals(Role.READ_WRITE, Role.failed(new TurborelException(-101, "2A000", "no table")));
         assertEquals(Role.READ_WRITE, Role.shown(shown("PRIMARY")));
         assertEquals(Role.READ_ONLY, Role.shown(shown("BACKUP ")));
         assertEquals(Role.READ_ONLY, Role.shown(shown("UNKNOWN")));
