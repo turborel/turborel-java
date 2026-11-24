@@ -108,7 +108,7 @@ public final class Statements {
     private Statement prepared() throws TurborelException {
         Reply reply = connection.receive();
         if (reply instanceof Reply.Prepared prepared) {
-            return new Statement(prepared.statement(), prepared.parameters(), prepared.columns());
+            return new Statement(prepared.statement(), prepared.parameters(), prepared.columns(), prepared.called());
         }
         throw unexpected(reply, "the server sent no Prepared");
     }

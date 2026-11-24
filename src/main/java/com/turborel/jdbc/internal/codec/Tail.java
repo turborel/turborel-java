@@ -34,6 +34,9 @@ public final class Tail {
     /** Tag 19, the columns' declared types, of a Prepared and a Description. */
     public static final int DECLARED = 19;
 
+    /** Tag 20, a CALL's procedure and each {@code ?}'s parameter mode, of a Prepared. */
+    public static final int CALLED = 20;
+
     /** What {@link #next} gives at the end of the body. */
     public static final int END = -1;
 
@@ -47,6 +50,9 @@ public final class Tail {
 
     /** The tags a Prepared's and a Description's tail may carry. */
     static final int[] COLUMNS = {DECLARED};
+
+    /** The tags a Prepared's tail may carry. */
+    static final int[] PREPARED = {DECLARED, CALLED};
 
     private final int[] taken;
     private int last;

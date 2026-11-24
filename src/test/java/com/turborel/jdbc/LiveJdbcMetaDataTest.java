@@ -13,6 +13,8 @@ import java.lang.reflect.Method;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -358,6 +360,63 @@ class LiveJdbcMetaDataTest {
                         }
                         Reflection.invoke(m, call, args);
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Verifies: [CLIENT Prepared statements] a prepared CALL's parameters each have their mode,
+     * granted {@code parameter-modes}, which connecting asks for: ParameterMetaData counts every
+     * {@code ?} and gives IN, OUT and INOUT; an OUT one takes no value and an IN one is no OUT
+     * parameter (SQLSTATE TB910); the OUT values are read back from the CALL's result, registered
+     * or not ([PROTOCOL Parameter modes]).
+     */
+    @Test
+    void aCallsModesAreTold() throws SQLException, IOException {
+        try (Connection c = LiveJdbc.connect()) {
+            made(c);
+            assertTrue(c.unwrap(TurborelConnection.class).granted().contains("parameter-modes"));
+            try (CallableStatement call = c.prepareCall("{call JM_TWICE(?, ?, ?)}")) {
+                ParameterMetaData pm = call.getParameterMetaData();
+                assertEquals(3, pm.getParameterCount());
+                assertEquals(ParameterMetaData.parameterModeIn, pm.getParameterMode(1));
+                assertEquals(ParameterMetaData.parameterModeOut, pm.getParameterMode(2));
+                assertEquals(ParameterMetaData.parameterModeInOut, pm.getParameterMode(3));
+                assertEquals(
+                        "TB910",
+                        assertThrows(SQLException.class, () -> call.setInt(2, 1))
+                                .getSQLState());
+                assertEquals(
+                        "TB910",
+                        assertThrows(SQLException.class, () -> call.registerOutParameter(1, Types.INTEGER))
+                                .getSQLState());
+                assertEquals(
+                        "TB910",
+                        assertThrows(SQLException.class, () -> call.registerOutParameter(9, Types.INTEGER))
+                                .getSQLState());
+                call.setInt(1, 21);
+                call.setInt(3, 5);
+                assertFalse(call.execute());
+                assertEquals(42, call.getInt(2));
+                assertEquals(6, call.getInt(3));
+            }
+            try (PreparedStatement prep = c.prepareStatement("CALL JM_TWICE(?, ?, ?)")) {
+                assertEquals(3, prep.getParameterMetaData().getParameterCount());
+                assertEquals(
+                        "TB910",
+                        assertThrows(SQLException.class, () -> prep.setInt(2, 1))
+                                .getSQLState());
+                assertEquals(
+                        "TB910",
+                        assertThrows(SQLException.class, () -> prep.setInt(9, 1))
+                                .getSQLState());
+                prep.setInt(1, 4);
+                prep.setInt(3, 7);
+                try (ResultSet rs = prep.executeQuery()) {
+                    assertTrue(rs.next());
+                    assertEquals(8, rs.getInt("B"));
+                    assertEquals(8, rs.getInt("C"));
                 }
             }
         }

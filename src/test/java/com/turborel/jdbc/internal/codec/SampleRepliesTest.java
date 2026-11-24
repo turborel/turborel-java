@@ -61,6 +61,18 @@ class SampleRepliesTest {
                 new Parameter(false, INT));
         r.put("prepared", new Reply.Prepared(1, parameters, twoColumns()));
         r.put("prepared-empty", new Reply.Prepared(2, List.of(), List.of()));
+        Parameter exact = new Parameter(false, INT);
+        r.put(
+                "prepared-called",
+                new Reply.Prepared(
+                        3,
+                        List.of(exact),
+                        List.of(new Column("G", INT, true)),
+                        new Called(
+                                new TypeName("S", "P"),
+                                List.of(
+                                        new Called.Mark(ParameterMode.IN, 1, exact),
+                                        new Called.Mark(ParameterMode.OUT, 2, exact)))));
         r.put(
                 "prepared-declared",
                 new Reply.Prepared(

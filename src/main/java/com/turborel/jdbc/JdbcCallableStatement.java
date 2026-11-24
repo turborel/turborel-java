@@ -1,5 +1,6 @@
 package com.turborel.jdbc;
 
+import com.turborel.jdbc.internal.codec.Called;
 import com.turborel.jdbc.internal.codec.Value;
 import com.turborel.jdbc.internal.session.Outcome;
 import java.io.Reader;
@@ -27,9 +28,12 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A callable statement, a CALL ([DESIGN] D2). JDBC counts every {@code ?} of it, the protocol its
- * IN parameters alone and gives its OUT parameters as a row: so a parameter given a value is an IN
- * parameter, one registered an OUT parameter, and one both an INOUT; the IN parameters are sent in
- * order, and the OUT ones read from the row in order. JDBC's {@code {call ...}} escape is a CALL.
+ * IN parameters alone and gives its OUT parameters as a row. Granted {@code parameter-modes}, the
+ * server tells each {@code ?}'s mode and ordinal position ([PROTOCOL Parameter modes]): an IN or
+ * INOUT one takes a value, sent in the order written, and an OUT or INOUT one is read from the row,
+ * its column of its parameter's place among them. Else a parameter given a value is an IN
+ * parameter, one registered an OUT parameter, and one both an INOUT, each read in order. JDBC's
+ * {@code {call ...}} escape is a CALL.
  */
 final class JdbcCallableStatement extends NamedParameters {
     private final TreeMap<Integer, @Nullable Object> given = new TreeMap<>();
@@ -46,11 +50,16 @@ final class JdbcCallableStatement extends NamedParameters {
         if (i < 1) {
             throw Errors.misuse("parameter " + i + " is not of 1 or more");
         }
+        input(i);
         given.put(i, x);
     }
 
     @Override
     List<Value> values() throws SQLException {
+        Called called = prepared.called();
+        if (called != null) {
+            return told(called.marks());
+        }
         if (given.size() != prepared.parameters().size()) {
             throw new TurborelException(
                     Errors.DYNAMIC_SQLCODE,
@@ -66,13 +75,38 @@ final class JdbcCallableStatement extends NamedParameters {
         return all;
     }
 
+    /** The values of the marks that take one, in the order written, each of its input's type. */
+    private List<Value> told(List<Called.Mark> marks) throws SQLException {
+        List<Value> all = new ArrayList<>();
+        for (int i = 1; i <= marks.size(); i++) {
+            if (!marks.get(i - 1).mode().takesValue()) {
+                continue;
+            }
+            if (!given.containsKey(i)) {
+                throw new TurborelException(
+                        Errors.DYNAMIC_SQLCODE, Errors.NO_VALUE_STATE, "[DESIGN] D2 parameter " + i + " has no value");
+            }
+            all.add(ToValue.of(given.get(i), parameterType(input(i))));
+        }
+        return all;
+    }
+
+    /** Whether the CALL gives values back: of OUT or INOUT marks told, else of marks registered. */
+    private boolean givesValues() {
+        Called called = prepared.called();
+        if (called == null) {
+            return !outs.isEmpty();
+        }
+        return called.marks().stream().anyMatch(m -> m.mode().givesValue());
+    }
+
     @Override
     boolean runPrepared() throws SQLException {
         outRow = null;
         List<Value> sent = values();
         return running(() -> {
             Outcome outcome = statements().execute(prepared, sent);
-            if (outcome instanceof Outcome.Rows rows && !outs.isEmpty()) {
+            if (outcome instanceof Outcome.Rows rows && givesValues()) {
                 JdbcResultSet row = new JdbcResultSet(null, connection, rows.columns(), Rows.of(rows.rows()));
                 row.next();
                 outRow = row;
@@ -105,6 +139,16 @@ final class JdbcCallableStatement extends NamedParameters {
 
     /** The column of the row that OUT parameter {@code i} is. */
     private int column(int i) throws SQLException {
+        Called called = prepared.called();
+        if (called != null) {
+            Called.Mark mark = gives(called, i);
+            return (int) called.marks().stream()
+                            .filter(m -> m.mode().givesValue() && m.ordinal() < mark.ordinal())
+                            .map(Called.Mark::ordinal)
+                            .distinct()
+                            .count()
+                    + 1;
+        }
         if (!outs.contains(i)) {
             throw Errors.misuse("parameter " + i + " is not registered as an OUT parameter");
         }
@@ -116,7 +160,24 @@ final class JdbcCallableStatement extends NamedParameters {
         if (i < 1) {
             throw Errors.misuse("parameter " + i + " is not of 1 or more");
         }
+        Called called = prepared.called();
+        if (called != null) {
+            gives(called, i);
+        }
         outs.add(i);
+    }
+
+    /** The mark {@code i} of a CALL told, one that gives a value back: OUT or INOUT. */
+    private static Called.Mark gives(Called called, int i) throws SQLException {
+        if (i > called.marks().size()) {
+            throw Errors.misuse(
+                    "parameter " + i + " is not of 1 to " + called.marks().size());
+        }
+        Called.Mark mark = called.marks().get(i - 1);
+        if (!mark.mode().givesValue()) {
+            throw Errors.misuse("parameter " + i + " is IN: it gives no value back");
+        }
+        return mark;
     }
 
     @Override

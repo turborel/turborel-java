@@ -100,8 +100,10 @@ the class `getObject` gives; whether it takes nulls, as the server
 says; whether a number is signed, and a string compared with its case.
 The protocol tells no column's table, so its table, schema and catalog
 are "". `ParameterMetaData` gives each parameter's type, of its tag,
-and its precision, scale and class; each is an IN parameter, whether
-it takes nulls unknown.
+and its precision, scale and class, whether it takes nulls unknown. Of
+a CALL whose modes the server told, it counts every `?`, OUT ones too,
+and gives each its mode, IN, OUT or INOUT; of another statement each is
+IN.
 
 ## ERRORS
 

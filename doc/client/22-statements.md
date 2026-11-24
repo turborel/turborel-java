@@ -4,7 +4,7 @@
 
 ## NAME
 
-`Statements`, `Statement`, `Column`, `Declared`, `Outcome`, `Batch`,
+`Statements`, `Statement`, `Column`, `Declared`, `Called`, `Outcome`, `Batch`,
 `Sink`, `Streamed`, `Told`, and of `Controls` `queryMany` and `setQueryAttributes`: the
 low-level client's statements, as turborel-client gives them
 
@@ -30,13 +30,17 @@ public final class Statements {                     // Connection.statements()
     public record Cursor(Statement statement, long number) {}
 }
 
-public record Statement(long number, List<Parameter> parameters, List<Column> columns) {}
+public record Statement(long number, List<Parameter> parameters, List<Column> columns, Called called) {}
 
 // com.turborel.jdbc.internal.codec
 public record Column(@Nullable String name, DataType type, boolean notNull, @Nullable Declared declared) {
     public String typeWritten();
 }
 public record Declared(String name, String written) {}
+public record Called(TypeName procedure, List<Mark> marks) {
+    public record Mark(ParameterMode mode, long ordinal, Parameter parameter) {}
+}
+public enum ParameterMode { IN, INOUT, OUT }
 public sealed interface Outcome {
     record Rows(List<Column> columns, List<List<Value>> rows) implements Outcome {}
     record Done(Completed completed) implements Outcome {}
@@ -90,6 +94,11 @@ by the request's `ends`.
 number, counted from 0: its parameters' types, its inputs alone, in the
 order of their `?` marks; and its columns, a query's, or of a CALL one
 for each `?` of an OUT or INOUT parameter, in the procedure's order.
+Granted `parameter-modes`, which connecting asks for, a CALL's
+`called()` tells its procedure's specific name and each `?` in the
+order written, OUT ones too: its parameter's mode, `ParameterMode` IN,
+INOUT or OUT, its ordinal position from 1 and its type; of another
+statement it is none, and each parameter is IN.
 `execute` runs it with a value for each parameter: a query's rows, all
 of them; a CALL's output parameters' values, as a row; another
 statement's completion. `deallocate` destroys it.

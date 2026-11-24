@@ -339,6 +339,13 @@ class EdgesTest {
         c.setAutoCommit(false);
         assertTrue(c.isValid(0));
         assertFalse(c.getAutoCommit());
+        JdbcConnection active = new JdbcConnection(
+                Scripted.after(List.of(), Scripted.complete(true), Scripted.complete(true)),
+                "jdbc:turborel://scripted");
+        active.setAutoCommit(false);
+        active.run("VALUES 1");
+        assertTrue(active.isValid(0), "within a transaction, the check is of it");
+        assertFalse(active.getAutoCommit());
         byte[] sent = Scripted.written(c.session());
         byte[] check = new com.turborel.jdbc.internal.codec.Request.Query("VALUES 1", true, List.of(), false).encode();
         assertArrayEquals(check, java.util.Arrays.copyOfRange(sent, sent.length - check.length, sent.length));
@@ -365,5 +372,62 @@ class EdgesTest {
         assertEquals(foreign, Errors.classed(foreign));
         SQLException none = new TurborelException(-1, "4", "short");
         assertEquals(none, Errors.classed(none));
+    }
+
+    /** A frame of {@code kind} and the body {@code w} wrote. */
+    private static byte[] frame(char kind, com.turborel.jdbc.internal.codec.Writer w) throws TurborelException {
+        return com.turborel.jdbc.internal.codec.Frames.frame((byte) kind, w.toByteArray());
+    }
+
+    /**
+     * Verifies: [DESIGN] D2 a CALL of a server that tells no parameter modes: a parameter given a
+     * value is an IN one, one registered an OUT one, read from the row in the order registered;
+     * values not one for each input fail (SQLSTATE 07001), a parameter not registered is read as
+     * none (TB910).
+     */
+    @Test
+    void aCallUntoldTakesItsModesFromTheProgram() throws SQLException {
+        byte[] prepared = frame(
+                'P',
+                new com.turborel.jdbc.internal.codec.Writer()
+                        .u32(0)
+                        .u32(1)
+                        .flag(false)
+                        .u8(2)
+                        .u32(10)
+                        .u32(0)
+                        .u32(1)
+                        .flag(true)
+                        .string("B")
+                        .u8(2)
+                        .u32(10)
+                        .u32(0)
+                        .flag(false));
+        byte[] row = frame(
+                'B',
+                new com.turborel.jdbc.internal.codec.Writer()
+                        .u32(1)
+                        .u32(1)
+                        .u8(2)
+                        .i128(java.math.BigInteger.valueOf(42))
+                        .u32(0));
+        JdbcConnection c = new JdbcConnection(
+                Scripted.after(List.of(), prepared, row, Scripted.complete(false), Scripted.complete(false)),
+                "jdbc:turborel://scripted");
+        try (java.sql.CallableStatement call = c.prepareCall("CALL P(?, ?)")) {
+            assertEquals(
+                    java.sql.ParameterMetaData.parameterModeIn,
+                    call.getParameterMetaData().getParameterMode(1));
+            call.setInt(1, 21);
+            call.setInt(2, 0);
+            assertEquals(
+                    "07001", assertThrows(SQLException.class, call::execute).getSQLState(), "two values, one input");
+            call.clearParameters();
+            call.setInt(1, 21);
+            call.registerOutParameter(2, java.sql.Types.INTEGER);
+            call.execute();
+            assertEquals(42, call.getInt(2));
+            assertMisuse(() -> call.getInt(1));
+        }
     }
 }

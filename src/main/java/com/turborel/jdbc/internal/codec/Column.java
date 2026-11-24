@@ -77,16 +77,29 @@ public record Column(
         List<Column> columns = r.list(Column::read);
         Tail tail = new Tail(Tail.COLUMNS);
         for (int tag = tail.next(r); tag != Tail.END; tag = tail.next(r)) {
-            List<Declared> declared = r.list(d -> new Declared(d.string(), d.string()));
-            if (declared.size() != columns.size()) {
-                throw r.malformed(Cite.TAIL, "its declared types are not one for each column");
-            }
-            List<Column> told = new ArrayList<>(columns.size());
-            for (int i = 0; i < columns.size(); i++) {
-                told.add(columns.get(i).declaredAs(declared.get(i)));
-            }
-            columns = told;
+            columns = declared(r, columns);
         }
         return columns;
+    }
+
+    /**
+     * {@code columns}, each its declared type, of tag 19's body read: a count of one for each,
+     * then each one's name and text.
+     *
+     * @param r where the body is read
+     * @param columns the columns
+     * @return the columns, each its declared type
+     * @throws TurborelException if it is malformed, or not one for each column
+     */
+    static List<Column> declared(Reader r, List<Column> columns) throws TurborelException {
+        List<Declared> declared = r.list(d -> new Declared(d.string(), d.string()));
+        if (declared.size() != columns.size()) {
+            throw r.malformed(Cite.TAIL, "its declared types are not one for each column");
+        }
+        List<Column> told = new ArrayList<>(columns.size());
+        for (int i = 0; i < columns.size(); i++) {
+            told.add(columns.get(i).declaredAs(declared.get(i)));
+        }
+        return told;
     }
 }

@@ -1,5 +1,6 @@
 package com.turborel.jdbc;
 
+import com.turborel.jdbc.internal.codec.Called;
 import com.turborel.jdbc.internal.codec.DataType;
 import com.turborel.jdbc.internal.codec.Value;
 import com.turborel.jdbc.internal.session.Pipeline;
@@ -67,6 +68,35 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     }
 
     /**
+     * The protocol's input parameter that {@code ?} mark {@code i} gives a value of, from 1: of a
+     * CALL told, granted {@code parameter-modes}, the marks of IN and INOUT parameters are its
+     * inputs, in the order written, and an OUT one takes no value ([PROTOCOL Parameter modes]);
+     * else each mark is its own.
+     *
+     * @param i the mark, from 1
+     * @return the input parameter, from 1
+     * @throws SQLException SQLSTATE TB910 of no such mark, or of an OUT one
+     */
+    final int input(int i) throws SQLException {
+        Called called = prepared.called();
+        if (called == null) {
+            return i;
+        }
+        List<Called.Mark> marks = called.marks();
+        if (i < 1 || i > marks.size()) {
+            throw Errors.misuse("parameter " + i + " is not of 1 to " + marks.size());
+        }
+        if (!marks.get(i - 1).mode().takesValue()) {
+            throw Errors.misuse("parameter " + i + " is OUT: it takes no value, and is read back once the CALL runs");
+        }
+        int at = 0;
+        for (int each = 0; each < i; each++) {
+            at += marks.get(each).mode().takesValue() ? 1 : 0;
+        }
+        return at;
+    }
+
+    /**
      * Sets parameter {@code i} to {@code x}, made a value of its type.
      *
      * @param i the parameter, from 1
@@ -75,7 +105,8 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
      */
     void set(int i, @Nullable Object x) throws SQLException {
         open();
-        values[i - 1] = ToValue.of(x, parameterType(i));
+        int at = input(i);
+        values[at - 1] = ToValue.of(x, parameterType(at));
     }
 
     /**
@@ -175,7 +206,7 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     @Override
     public ParameterMetaData getParameterMetaData() throws SQLException {
         open();
-        return new JdbcParameterMetaData(prepared.parameters());
+        return JdbcParameterMetaData.of(prepared);
     }
 
     @Override

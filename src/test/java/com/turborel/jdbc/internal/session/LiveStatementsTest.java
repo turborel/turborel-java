@@ -255,7 +255,9 @@ class LiveStatementsTest {
      * Verifies: [PROTOCOL Prepared 'P'] a CALL's parameters are its inputs alone, its columns one
      * for each {@code ?} of an OUT or INOUT parameter, in the procedure's order, named as each, an
      * INOUT one both; [PROTOCOL Execute 'E'] executed, it sends one Rows reply of one row of those
-     * parameters' values before its Complete, which is its outcome.
+     * parameters' values before its Complete, which is its outcome; [PROTOCOL Parameter modes]
+     * its Prepared tells its procedure and each {@code ?}'s mode and position, and that of another
+     * statement none.
      */
     @Test
     void aCallGivesItsOutputParameters() throws TurborelException, IOException {
@@ -269,6 +271,16 @@ class LiveStatementsTest {
             assertEquals(
                     List.of("HALF", "TWICE"),
                     call.columns().stream().map(Column::name).toList());
+            com.turborel.jdbc.internal.codec.Called called = call.called();
+            assertNotNull(called, "granted parameter-modes, which connecting asks for");
+            assertEquals("SPLIT", called.procedure().name().replaceAll("_\\d+$", ""), "its specific name");
+            assertEquals(
+                    List.of("IN 1", "OUT 2", "INOUT 3"),
+                    called.marks().stream()
+                            .map(m -> m.mode() + " " + m.ordinal())
+                            .toList());
+            assertNull(
+                    statements.prepare("VALUES CAST(? AS INTEGER)").called(), "another statement, its parameters IN");
             Outcome.Rows out = (Outcome.Rows) statements.execute(call, List.of(integer(9), integer(5)));
             assertEquals(List.of(List.of(integer(4), integer(10))), out.rows());
             statements.query("ROLLBACK");

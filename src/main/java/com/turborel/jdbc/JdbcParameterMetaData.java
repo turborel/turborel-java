@@ -1,6 +1,8 @@
 package com.turborel.jdbc;
 
+import com.turborel.jdbc.internal.codec.Called;
 import com.turborel.jdbc.internal.codec.Parameter;
+import com.turborel.jdbc.internal.codec.ParameterMode;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.util.List;
@@ -12,9 +14,34 @@ import org.jspecify.annotations.Nullable;
  */
 final class JdbcParameterMetaData implements ParameterMetaData {
     private final List<Parameter> parameters;
+    private final List<ParameterMode> modes;
 
+    /** The metadata of {@code parameters}, each IN, as of a statement other than a CALL told. */
     JdbcParameterMetaData(List<Parameter> parameters) {
+        this(parameters, java.util.Collections.nCopies(parameters.size(), ParameterMode.IN));
+    }
+
+    /**
+     * The metadata of a statement's {@code ?} marks: each its parameter and its mode, as a CALL's
+     * are told, granted {@code parameter-modes} ([PROTOCOL Parameter modes]).
+     */
+    JdbcParameterMetaData(List<Parameter> parameters, List<ParameterMode> modes) {
         this.parameters = List.copyOf(parameters);
+        this.modes = List.copyOf(modes);
+    }
+
+    /**
+     * The metadata of {@code statement}'s {@code ?} marks: of a CALL told, each mark, its OUT ones
+     * too, with its mode; else each input parameter, IN.
+     */
+    static JdbcParameterMetaData of(com.turborel.jdbc.internal.session.Statement statement) {
+        Called called = statement.called();
+        if (called == null) {
+            return new JdbcParameterMetaData(statement.parameters());
+        }
+        return new JdbcParameterMetaData(
+                called.marks().stream().map(Called.Mark::parameter).toList(),
+                called.marks().stream().map(Called.Mark::mode).toList());
     }
 
     private Parameter parameter(int i) throws SQLException {
@@ -68,7 +95,11 @@ final class JdbcParameterMetaData implements ParameterMetaData {
     @Override
     public int getParameterMode(int i) throws SQLException {
         parameter(i);
-        return parameterModeIn;
+        return switch (modes.get(i - 1)) {
+            case IN -> parameterModeIn;
+            case INOUT -> parameterModeInOut;
+            case OUT -> parameterModeOut;
+        };
     }
 
     @Override

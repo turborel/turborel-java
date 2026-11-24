@@ -419,7 +419,7 @@ a test cites by its Javadoc comment, beginning `Verifies:`.
 
 The protocol's sample frames, `doc/client/05-protocol-frames.tsv`, are
 copied into the tests' resources at a commit of Turborel's main, at
-045e42a9 now, beside the code that reads them
+1afa44c2 now, beside the code that reads them
 (`src/test/resources/com/turborel/jdbc/internal/codec`). Copying them,
 rather than reading main's file as the tests run, keeps each run's
 outcome the commit's own; a change of the file comes in a commit that

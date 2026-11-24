@@ -50,14 +50,19 @@ and `getParameterMetaData` the parameters, without running it. Closing
 it deallocates it.
 
 **Callable statements.** `prepareCall` takes a CALL, or JDBC's
-`{call …}`. JDBC counts each `?` of it, and the server its IN
-parameters alone: so each `?` given a value is an IN parameter, and
-each registered by `registerOutParameter` an OUT parameter, one both an
-INOUT. The IN values are sent in the order of their `?` marks, and once
-it is executed the OUT parameters are read by their own numbers, by
-`getInt(2)` and the others, from the row of OUT values the server sends
-in the order of theirs. A parameter set or registered by its name is
-refused.
+`{call …}`. JDBC counts each `?` of it, and the server takes its input
+parameters alone. Granted `parameter-modes`, which connecting asks for,
+the server tells each `?`'s mode, IN, OUT or INOUT, and its parameter's
+position, which `getParameterMetaData` gives: an IN or INOUT `?` takes
+a value, an OUT one none, and setting it is refused, as registering an
+IN one by `registerOutParameter` is. Once the CALL is executed, each OUT
+or INOUT parameter is read by its own number, by `getInt(2)` and the
+others, from the row of their values the server sends in the
+procedure's order, registered or not. A `PreparedStatement` of a CALL
+counts and takes its marks the same way. Of a server that tells no
+modes, each `?` given a value is an IN parameter, each registered an
+OUT one, one both an INOUT, and the OUT values are read in the order of
+their marks. A parameter set or registered by its name is refused.
 
 **Batches.** `addBatch` keeps a statement's SQL, or a prepared
 statement's values, and `executeBatch` sends them all as one pipeline

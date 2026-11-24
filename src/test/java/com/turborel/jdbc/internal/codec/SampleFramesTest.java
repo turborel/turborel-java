@@ -123,7 +123,7 @@ class SampleFramesTest {
     }
 
     /**
-     * Verifies: [PROTOCOL Sample frames] every line of the file, at 045e42a9, is read as the page
+     * Verifies: [PROTOCOL Sample frames] every line of the file, at 1afa44c2, is read as the page
      * lays it out: five fields apart by one tab, a direction of client or server, a name unique
      * in the file, needs of - or capabilities the protocol names, the whole frame in upper-case
      * hexadecimal, its header's length its body's, and a meaning; every request and reply kind is
@@ -132,7 +132,7 @@ class SampleFramesTest {
     @Test
     void everyLineIsAsThePageLaysItOut() throws TurborelException {
         List<String[]> lines = SampleFrames.lines();
-        assertTrue(lines.size() >= 140, "147 frames at 045e42a9");
+        assertTrue(lines.size() >= 140, "148 frames at 1afa44c2");
         Set<String> names = new HashSet<>();
         Set<String> kinds = new HashSet<>();
         for (String[] f : lines) {

@@ -1,6 +1,7 @@
 package com.turborel.jdbc.internal.codec;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * What the server sends ([PROTOCOL Replies]), as {@link ReplyCodec} reads it. A reply's values
@@ -66,20 +67,38 @@ public sealed interface Reply {
      * Prepared: a statement prepared, or described.
      *
      * @param statement its number, a {@code u32}
-     * @param parameters its parameters, in the order of their {@code ?} marks
-     * @param columns its columns, none of a statement not a query
+     * @param parameters its input parameters, in the order of their {@code ?} marks
+     * @param columns its columns, a query's, or a CALL's output parameters'; none of another
+     * @param called of a CALL, its procedure and each {@code ?}'s mode, granted {@code
+     *     parameter-modes}; none of another statement
      */
-    record Prepared(long statement, List<Parameter> parameters, List<Column> columns) implements Reply {
+    record Prepared(
+            long statement,
+            List<Parameter> parameters,
+            List<Column> columns,
+            @Nullable Called called) implements Reply {
         /**
          * A Prepared of the fields given.
          *
          * @param statement its number
          * @param parameters its parameters, copied
          * @param columns its columns, copied
+         * @param called of a CALL, what it tells, or none
          */
         public Prepared {
             parameters = List.copyOf(parameters);
             columns = List.copyOf(columns);
+        }
+
+        /**
+         * A Prepared of no CALL told.
+         *
+         * @param statement its number
+         * @param parameters its parameters
+         * @param columns its columns
+         */
+        public Prepared(long statement, List<Parameter> parameters, List<Column> columns) {
+            this(statement, parameters, columns, null);
         }
     }
 

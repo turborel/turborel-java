@@ -47,6 +47,9 @@ public final class Capability {
     /** Prepared and Description carry each column's declared type, tail 19. */
     public static final String DECLARED_TYPES = "declared-types";
 
+    /** A Prepared of a CALL carries its procedure and each {@code ?}'s parameter mode, tail 20. */
+    public static final String PARAMETER_MODES = "parameter-modes";
+
     /** Every capability of version 1, in the table's order. */
     public static final List<String> ALL = List.of(
             NOTICES,
@@ -67,7 +70,8 @@ public final class Capability {
             GENERATED_VALUES,
             FETCH_ENDS,
             CONDITIONS,
-            DECLARED_TYPES);
+            DECLARED_TYPES,
+            PARAMETER_MODES);
 
     private Capability() {}
 }

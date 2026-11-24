@@ -96,7 +96,7 @@ public final class ReplyCodec {
         return switch (kind) {
             case Reply.CHALLENGE -> new Reply.Challenge(r.octets());
             case Reply.READY -> new Reply.Ready(r.string(), CancelKey.read(r), r.strings(), r.string());
-            case Reply.PREPARED -> new Reply.Prepared(r.u32(), r.list(Parameter::read), Column.readAll(r));
+            case Reply.PREPARED -> prepared(r);
             case Reply.DESCRIPTION -> new Reply.Description(Column.readAll(r));
             case Reply.ROWS -> new Reply.Rows(r.list(ValueCodec::readRow));
             case Reply.SUSPENDED -> new Reply.Suspended();
@@ -108,6 +108,26 @@ public final class ReplyCodec {
             case Reply.PONG -> new Reply.Pong();
             default -> throw Broken.connection(Cite.FRAMES + " no reply is of kind " + Byte.toUnsignedInt(kind));
         };
+    }
+
+    /**
+     * A Prepared: its number, input parameters and columns, then its tail: the columns' declared
+     * types, tag 19, and of a CALL its procedure and each {@code ?}'s mode, tag 20.
+     */
+    private static Reply prepared(Reader r) throws TurborelException {
+        long statement = r.u32();
+        List<Parameter> parameters = r.list(Parameter::read);
+        List<Column> columns = r.list(Column::read);
+        Called called = null;
+        Tail tail = new Tail(Tail.PREPARED);
+        for (int tag = tail.next(r); tag != Tail.END; tag = tail.next(r)) {
+            if (tag == Tail.DECLARED) {
+                columns = Column.declared(r, columns);
+            } else {
+                called = Called.read(r);
+            }
+        }
+        return new Reply.Prepared(statement, parameters, columns, called);
     }
 
     private static Reply lob(Reader r) throws TurborelException {
