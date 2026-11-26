@@ -81,6 +81,19 @@ undone, its detail naming the row, as `row 7 of the copy`. `abandon`, or
 connection sends only its rows, its end and a ping. `copyRows` copies
 the rows an iterable gives.
 
+**By column.** Granted `columns` too *(extension)*, which connecting
+asks for, a row whose values are each a character string or null goes
+by column, in a CopyColumns: each column's null bits, where each cell
+ends and the cells' text. Each cell is the text a CopyData would carry,
+and the server casts it to its column's type as it casts that text, so
+a number's text is its number and a cell too long fails rather than
+being cut. The rows go so where the copy's width is known: the columns
+`copyIn` names, or the table's an import found. Any other row goes by
+row, in a CopyData, the rows waiting sent first, so one copy may mix the
+two and its rows keep their order, as a failure's `row 7 of the copy`
+counts them. Where `columns` is not granted, every row goes by row.
+An import's rows are text, so an import by copy goes by column.
+
 **Import.** `importRows` inserts a source's records into the table an
 `Import` names: by copy where `copy` is granted, no row is to be skipped
 and no column is a large object, a copy a batch; else through a prepared
@@ -156,7 +169,7 @@ The User's Guide's chapter
 
 ## STANDARD
 
-[PROTOCOL CopyIn 'I'], [PROTOCOL CopyData 'J'], [PROTOCOL CopyEnd 'N'],
+[PROTOCOL CopyIn 'I'], [PROTOCOL CopyData 'J'], [PROTOCOL CopyColumns 'O'], [PROTOCOL CopyEnd 'N'],
 [PROTOCOL Conversations]; [CLIENT Copying and exporting],
 [CLIENT Importing].
 

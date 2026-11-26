@@ -33,7 +33,7 @@ public final class Capability {
     public static final String COMPRESSION = "compression";
     /** A Complete that committed carries the commit's log position. */
     public static final String COMMIT_POSITION = "commit-position";
-    /** The requests CopyIn, CopyData and CopyEnd. */
+    /** The requests CopyIn, CopyData and CopyEnd; CopyColumns too with {@code columns}. */
     public static final String COPY = "copy";
     /** A Complete carries the rows counted and the server's time. */
     public static final String ROW_COUNTS = "row-counts";
@@ -52,6 +52,9 @@ public final class Capability {
 
     /** The request Debug, its answer Debugged, and the Event sent unasked *(extension)*. */
     public static final String DEBUGGER = "debugger";
+
+    /** The request CopyColumns, a copy's rows by column as text, with {@code copy} *(extension)*. */
+    public static final String COLUMNS = "columns";
 
     /** Every capability of version 1, in the table's order. */
     public static final List<String> ALL = List.of(
@@ -75,7 +78,8 @@ public final class Capability {
             CONDITIONS,
             DECLARED_TYPES,
             PARAMETER_MODES,
-            DEBUGGER);
+            DEBUGGER,
+            COLUMNS);
 
     private Capability() {}
 }

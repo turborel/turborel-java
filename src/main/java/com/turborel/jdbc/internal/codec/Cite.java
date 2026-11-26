@@ -29,6 +29,9 @@ public final class Cite {
     /** The debugger's messages *(extension)*. */
     public static final String DEBUG = "[PROTOCOL Debug 'V']";
 
+    /** The protocol's CopyColumns: a copy's rows by column, as text. */
+    public static final String COPY_COLUMNS = "[PROTOCOL CopyColumns 'O']";
+
     /** Parameter modes, tail 20 of a Prepared. */
     public static final String MODES = "[PROTOCOL Parameter modes]";
 

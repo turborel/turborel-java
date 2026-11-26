@@ -285,7 +285,7 @@ final class Importer {
         }
         Copying copy;
         try {
-            copy = Copying.begin(connection, table, columns, true);
+            copy = Copying.begin(connection, table, columns, true, types().size());
         } catch (TurborelException failure) {
             throw new Import.Stopped(null, Import.Cause.sql(failure), committed, 0);
         }

@@ -10,6 +10,7 @@ import static com.turborel.jdbc.internal.codec.Fixture.u32;
 import static com.turborel.jdbc.internal.codec.Fixture.u64;
 import static com.turborel.jdbc.internal.codec.Fixture.u8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.turborel.jdbc.TurborelException;
 import java.util.List;
@@ -190,5 +191,36 @@ class RequestTest {
         List<List<Value>> rows = List.of(List.of(Value.NULL), List.of());
         assertArrayEquals(frame('J', u32(2), u32(1), u8(0), u32(0)), new Request.CopyData(rows).encode());
         assertArrayEquals(frame('N', u8(0)), new Request.CopyEnd(false).encode());
+    }
+
+    /**
+     * Verifies: [PROTOCOL CopyColumns 'O'] CopyColumns: rows, then of each column its null bits,
+     * {@code (rows + 7) / 8} bytes, row 0 the low bit of the first byte and none past the last row
+     * set; an end for each row, in bytes of the text, a null cell's where the one before it ends,
+     * the last the text's length; and the text; a row of another width, or a value not text, is
+     * refused before anything is sent.
+     */
+    @Test
+    void copyColumns() throws TurborelException {
+        List<List<Value>> rows = new java.util.ArrayList<>();
+        for (int r = 0; r < 9; r++) {
+            rows.add(List.of(r == 0 || r == 8 ? Value.NULL : new Value.Text(r == 1 ? "\u00e9" : "x")));
+        }
+        byte[] ends = cat(u32(9), u32(0), u32(2), u32(3), u32(4), u32(5), u32(6), u32(7), u32(8), u32(8));
+        assertArrayEquals(
+                frame(
+                        'O',
+                        u32(9),
+                        u32(1),
+                        bytes(new byte[] {1, 1}),
+                        ends,
+                        bytes("\u00e9xxxxxx".getBytes(java.nio.charset.StandardCharsets.UTF_8))),
+                new Request.CopyColumns(rows).encode());
+        assertArrayEquals(frame('O', u32(0), u32(0)), new Request.CopyColumns(List.of()).encode());
+        Request ragged = new Request.CopyColumns(List.of(List.of(Value.NULL), List.of()));
+        assertMisuse(ragged::encode);
+        Request typed = new Request.CopyColumns(List.of(List.of(new Value.Exact(java.math.BigInteger.ONE, 0))));
+        assertMisuse(typed::encode);
+        assertTrue(Request.CopyColumns.text(List.of(Value.NULL, new Value.Text(""))));
     }
 }

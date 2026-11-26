@@ -23,6 +23,15 @@ closed before it finishes is abandoned. While one is under way the
 connection sends nothing but its rows, its end and a ping; any other
 request is the program's misuse (SQLSTATE TB910).
 
+Rows of text go faster. Where the server grants `columns`
+*(extension)*, a copy that names its columns sends each row whose values
+are all character strings or nulls by column, as the server takes it
+apart to write it, and the server casts each cell to its column's type,
+as it casts a string in a row: `"42"` into an INTEGER column is 42, and
+a string too long is refused, not cut. Other rows go by row in the same
+copy, in their order. An import by copy, whose fields are text, goes by
+column too.
+
 ```java
 conn.statements().query("CREATE TABLE READINGS (ID INTEGER PRIMARY KEY, SENSOR VARCHAR(10))");
 conn.statements().query("COMMIT");

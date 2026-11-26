@@ -16,18 +16,27 @@ import java.util.List;
  * not cut; a copy is all or nothing, within the transaction, or its own under autocommit. A copy
  * closed before it ends is abandoned, so the connection takes requests again. As Turborel's {@code
  * client/src/copy.rs}.
+ *
+ * <p>Granted {@code columns}, rows whose values are each a character string or null, as an import's
+ * are, go by column in a CopyColumns ([PROTOCOL CopyColumns 'O']), each cell the text a CopyData
+ * would carry, where the copy's width is known: the columns it names, or the table's an import
+ * found. Any other row goes by row in a CopyData, the rows before it sent first, so the rows keep
+ * their order and a copy may mix the two.
  */
 public final class Copying implements AutoCloseable {
     /** The bytes of rows a CopyData carries at most, about: Turborel's {@code CHUNK_BYTES}, 256 KiB. */
     public static final int CHUNK_BYTES = 256 * 1024;
 
     private final Connection connection;
+    private final int width;
     private List<List<Value>> waiting = new ArrayList<>();
+    private boolean waitingByColumn;
     private int bytes;
     private boolean ended;
 
-    private Copying(Connection connection) {
+    private Copying(Connection connection, int width) {
         this.connection = connection;
+        this.width = width;
     }
 
     /**
@@ -43,10 +52,27 @@ public final class Copying implements AutoCloseable {
      */
     static Copying begin(Connection connection, String table, List<String> columns, boolean ends)
             throws TurborelException {
+        return begin(connection, table, columns, ends, columns.size());
+    }
+
+    /**
+     * Begins a copy as {@link #begin(Connection, String, List, boolean)}, of {@code width} columns.
+     *
+     * @param connection the connection
+     * @param table the table, as SQL names it
+     * @param columns its columns, in order, all of the table's if none
+     * @param ends whether the copy is its transaction's own
+     * @param width the columns the copy takes, 0 if not known, so its rows go by row
+     * @return the copy
+     * @throws TurborelException a connection failure: {@code copy} not granted, or the server gone
+     */
+    static Copying begin(Connection connection, String table, List<String> columns, boolean ends, int width)
+            throws TurborelException {
         connection.needs(false, Capability.COPY);
         connection.send(new Request.CopyIn(table, columns, ends));
         connection.copying(true);
-        return new Copying(connection);
+        boolean byColumn = connection.granted().contains(Capability.COLUMNS);
+        return new Copying(connection, byColumn ? width : 0);
     }
 
     /**
@@ -57,6 +83,11 @@ public final class Copying implements AutoCloseable {
      *     #finish}'s failure
      */
     public void send(List<Value> row) throws TurborelException {
+        boolean byColumn = width > 0 && row.size() == width && Request.CopyColumns.text(row);
+        if (byColumn != waitingByColumn) {
+            flush();
+            waitingByColumn = byColumn;
+        }
         bytes += RowSize.of(row);
         waiting.add(row);
         if (bytes >= CHUNK_BYTES) {
@@ -71,7 +102,7 @@ public final class Copying implements AutoCloseable {
         bytes = 0;
         List<List<Value>> rows = waiting;
         waiting = new ArrayList<>();
-        connection.send(new Request.CopyData(rows));
+        connection.send(waitingByColumn ? new Request.CopyColumns(rows) : new Request.CopyData(rows));
     }
 
     /**

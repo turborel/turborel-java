@@ -118,6 +118,10 @@ class SampleFramesTest {
                 "copy-data",
                 new Request.CopyData(List.of(
                         List.of(new Value.Text("1"), Value.NULL), List.of(new Value.Text("2"), new Value.Text("b")))));
+        r.put(
+                "copy-columns",
+                new Request.CopyColumns(List.of(
+                        List.of(new Value.Text("1"), new Value.Text("b")), List.of(Value.NULL, new Value.Text("")))));
         r.put("copy-end", new Request.CopyEnd(false));
         r.put("copy-end-abandon", new Request.CopyEnd(true));
         debugs(r);
@@ -138,7 +142,7 @@ class SampleFramesTest {
     }
 
     /**
-     * Verifies: [PROTOCOL Sample frames] every line of the file, at 5863fe65, is read as the page
+     * Verifies: [PROTOCOL Sample frames] every line of the file, at 45cb0d7f, is read as the page
      * lays it out: five fields apart by one tab, a direction of client or server, a name unique
      * in the file, needs of - or capabilities the protocol names, the whole frame in upper-case
      * hexadecimal, its header's length its body's, and a meaning; every request and reply kind is
@@ -147,7 +151,7 @@ class SampleFramesTest {
     @Test
     void everyLineIsAsThePageLaysItOut() throws TurborelException {
         List<String[]> lines = SampleFrames.lines();
-        assertTrue(lines.size() >= 140, "166 frames at 5863fe65");
+        assertTrue(lines.size() >= 140, "167 frames at 45cb0d7f");
         Set<String> names = new HashSet<>();
         Set<String> kinds = new HashSet<>();
         for (String[] f : lines) {
@@ -168,7 +172,7 @@ class SampleFramesTest {
         }
         assertEquals(names, SampleFrames.all().keySet());
         Set<String> every = new HashSet<>();
-        for (char kind : "HAZQPEFCDXLYGWUIJNVz".toCharArray()) {
+        for (char kind : "HAZQPEFCDXLYGWUIJONVz".toCharArray()) {
             every.add("client " + kind);
         }
         for (char kind : "CRPDBSKELNGTVWz".toCharArray()) {

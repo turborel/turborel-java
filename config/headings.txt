@@ -1,5 +1,5 @@
 # The headings of Turborel's documents a citation may name (RULES.md D6,
-# R-TRACE-2), copied from Turborel's main at 5863fe65, as printed: PROTOCOL
+# R-TRACE-2), copied from Turborel's main at 45cb0d7f, as printed: PROTOCOL
 # for doc/client/05-protocol.md, CLIENT for doc/client/02-library.md and
 # doc/client/02-library-connections.md. A change of commit changes
 # CONFORMANCE.md's in the same commit.
@@ -33,6 +33,7 @@ PROTOCOL Reset 'W'
 PROTOCOL ChangeUser 'U'
 PROTOCOL CopyIn 'I'
 PROTOCOL CopyData 'J'
+PROTOCOL CopyColumns 'O'
 PROTOCOL CopyEnd 'N'
 PROTOCOL Debug 'V'
 PROTOCOL Replies

@@ -489,11 +489,11 @@ public final class Connection implements AutoCloseable {
      * attributes, is refused before anything is sent, the connection kept.
      *
      * @param request the request
-     * @throws TurborelException the codec's refusal; the failure that lost the connection, before
-     *     or as it is written
+     * @throws TurborelException the codec's refusal; the failure that lost the connection
      */
     void send(Request request) throws TurborelException {
         writable(request instanceof Request.CopyData
+                || request instanceof Request.CopyColumns
                 || request instanceof Request.CopyEnd
                 || request instanceof Request.Ping);
         put(request.encode());

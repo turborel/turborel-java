@@ -26,6 +26,7 @@ public sealed interface Request
                 Request.ChangeUser,
                 Request.CopyIn,
                 Request.CopyData,
+                Request.CopyColumns,
                 Request.CopyEnd,
                 LobRequest,
                 DebugRequest {
@@ -64,6 +65,8 @@ public sealed interface Request
     byte COPY_IN = 'I';
     /** CopyData. */
     byte COPY_DATA = 'J';
+    /** CopyColumns. */
+    byte COPY_COLUMNS = 'O';
     /** CopyEnd. */
     byte COPY_END = 'N';
     /** Debug *(extension)*. */
@@ -374,6 +377,74 @@ public sealed interface Request
                 ValueCodec.writeRow(w, row);
             }
             return Frames.frame(COPY_DATA, w.toByteArray());
+        }
+    }
+
+    /**
+     * CopyColumns, with {@code copy} and {@code columns}: rows of the copy sent by column, as text.
+     * Each column is its null bits, a bit a row, row 0 the low bit of the first byte; where each
+     * row's cell ends in its text, in bytes, a null cell where the one before it ends; and its
+     * cells' UTF-8 one after another. Each cell is the text a CopyData of the row would carry, so
+     * the server takes it as that text, cast to its column's type.
+     *
+     * @param rows the rows, each of the same number of values, each a character string or null
+     */
+    record CopyColumns(List<List<Value>> rows) implements Request {
+        /**
+         * A CopyColumns of the rows given.
+         *
+         * @param rows the rows, copied
+         */
+        public CopyColumns {
+            rows = List.copyOf(rows.stream().map(List::copyOf).toList());
+        }
+
+        /**
+         * Whether a row may go in a CopyColumns: each value a character string or null.
+         *
+         * @param row the row
+         * @return whether it is all text
+         */
+        public static boolean text(List<Value> row) {
+            for (Value v : row) {
+                if (!(v instanceof Value.Text) && !(v instanceof Value.Null)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public byte[] encode() throws TurborelException {
+            int width = rows.isEmpty() ? 0 : rows.get(0).size();
+            Writer w = new Writer().bits32(rows.size()).bits32(width);
+            for (int c = 0; c < width; c++) {
+                column(w, c, width);
+            }
+            return Frames.frame(COPY_COLUMNS, w.toByteArray());
+        }
+
+        private void column(Writer w, int c, int width) throws TurborelException {
+            byte[] nulls = new byte[(rows.size() + Byte.SIZE - 1) / Byte.SIZE];
+            java.io.ByteArrayOutputStream text = new java.io.ByteArrayOutputStream();
+            Writer ends = new Writer().bits32(rows.size());
+            for (int r = 0; r < rows.size(); r++) {
+                List<Value> row = rows.get(r);
+                if (row.size() != width) {
+                    throw Failures.misuse(Cite.COPY_COLUMNS + " row " + (r + 1) + " has " + row.size() + " values, for "
+                            + width + " columns");
+                }
+                Value v = row.get(c);
+                if (v instanceof Value.Text t) {
+                    text.writeBytes(Writer.utf8(t.text()));
+                } else if (v instanceof Value.Null) {
+                    nulls[r / Byte.SIZE] |= (byte) (1 << (r % Byte.SIZE));
+                } else {
+                    throw Failures.misuse(Cite.COPY_COLUMNS + " a cell is text or null, not " + v);
+                }
+                ends.u32(text.size());
+            }
+            w.bytes(nulls).raw(ends.toByteArray()).bytes(text.toByteArray());
         }
     }
 

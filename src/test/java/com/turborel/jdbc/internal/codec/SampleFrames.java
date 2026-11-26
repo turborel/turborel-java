@@ -12,7 +12,7 @@ import java.util.TreeMap;
 
 /**
  * The protocol's sample frames, {@code doc/client/05-protocol-frames.tsv} of Turborel's main at
- * 5863fe65, copied beside these tests (RULES.md D6): one frame a line, as the page's Sample frames
+ * 45cb0d7f, copied beside these tests (RULES.md D6): one frame a line, as the page's Sample frames
  * lays the file out ([PROTOCOL Sample frames]).
  */
 final class SampleFrames {
